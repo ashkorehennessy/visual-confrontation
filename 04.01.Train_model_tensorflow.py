@@ -14,6 +14,10 @@ import sys
 from sklearn.model_selection import train_test_split
 import time
 
+# 防止爆显存
+config = tf.compat.v1.ConfigProto(gpu_options=tf.compat.v1.GPUOptions(allow_growth=True))
+sess = tf.compat.v1.Session(config=config)
+
 # Loading dataset
 print("Loading dataset ...")
 
