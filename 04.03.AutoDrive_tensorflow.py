@@ -38,6 +38,9 @@ def auto_pilot():
         number = pred.outputs[0]
         prediction = tf.argmax(number, 1)
 
+        start_time = time.time() #开始时间
+        obszone_time = 40 #越过障碍区的时间
+
         while cap.isOpened():
             ret, frame = cap.read()
             frame = rev_cam(frame)
@@ -54,16 +57,22 @@ def auto_pilot():
             print('img_out:', value)
 
             if value == 0:
-                print("forward")
-                # robot.movement.move_forward(times=300)
+                if time.time() - start_time < obszone_time:
+                    print("forward")
+                    robot.movement.move_forward(times=300)
+                else:
+                    print("forward, but pass the obszone, so stop")
             elif value == 1:
                 print("left")
-                # robot.movement.left_ward()
+                robot.movement.left_ward()
             elif value == 2:
                 print("right")
-                # robot.movement.right_ward()
+                robot.movement.right_ward()
             elif value == 3:
-                print("stop sign")
+                if time.time() - start_time < obszone_time:
+                    print("stop sign, but did not pass the obszone, so forward")
+                    robot.movement.move_forward(times=300)
+                else:pass
                 # robot.movement.hit()
             elif value == 4:
                 print("Banner forward")
