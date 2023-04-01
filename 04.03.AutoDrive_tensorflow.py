@@ -15,7 +15,7 @@ width = 480
 height = 180
 channel = 1
 inference_path = tf.Graph()
-filepath = os.getcwd() + '/model/auto_drive_model/-60'
+filepath = os.getcwd() + '/model/auto_drive_model/-326'
 
 
 temp_image = np.zeros(width * height * channel, 'uint8')
@@ -39,7 +39,7 @@ def auto_pilot():
         prediction = tf.argmax(number, 1)
 
         start_time = time.time() #开始时间
-        obszone_time = 40 #越过障碍区的时间
+        obszone_time = 30 #越过障碍区的时间
 
         while cap.isOpened():
             ret, frame = cap.read()
@@ -59,15 +59,15 @@ def auto_pilot():
             if value == 0:
                 if time.time() - start_time < obszone_time:
                     print("forward")
-                    robot.movement.move_forward(times=300)
+                    robot.movement.move_forward(speed=20, times=300)
                 else:
                     print("forward, but pass the obszone, so stop")
             elif value == 1:
                 print("left")
-                robot.movement.left_ward()
+                robot.movement.left_ward(speed=5, times=300)
             elif value == 2:
                 print("right")
-                robot.movement.right_ward()
+                robot.movement.right_ward(speed=5, times=300)
             elif value == 3:
                 if time.time() - start_time < obszone_time:
                     print("stop sign, but did not pass the obszone, so forward")
