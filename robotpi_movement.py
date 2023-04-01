@@ -105,16 +105,16 @@ class Movement:
             return True
         return False
 
-    def left_ward(self):
+    def left_ward(self, speed=5, turn=50, time=500):
         if self.isOpen:
-            command = self.cmd.Command(0, 5, 50, 500)
+            command = self.cmd.Command(0, speed, turn, time)
             self.action.write_serial(command)
             return True
         return False
 
-    def right_ward(self):
+    def right_ward(self, speed=5, turn=-50, time=500):
         if self.isOpen:
-            command = self.cmd.Command(0, 5, -50, 500)
+            command = self.cmd.Command(0, speed, turn, time)
             self.action.write_serial(command)
             return True
         return False

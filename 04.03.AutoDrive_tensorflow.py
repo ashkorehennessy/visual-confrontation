@@ -72,7 +72,8 @@ def auto_pilot():
                 if time.time() - start_time < obszone_time:
                     print("stop sign, but did not pass the obszone, so forward")
                     robot.movement.move_forward(times=300)
-                else:pass
+                else:
+                    print("stop sign")
                 # robot.movement.hit()
             elif value == 4:
                 print("Banner forward")
