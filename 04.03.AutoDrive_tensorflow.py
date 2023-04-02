@@ -63,11 +63,19 @@ def auto_pilot():
                 else:
                     print("forward, but pass the obszone, so stop")
             elif value == 1:
-                print("left")
-                robot.movement.left_ward(speed=5, times=300)
+                if time.time() - start_time < obszone_time:
+                    print("left")
+                    robot.movement.left_ward(speed=5, times=300)
+                else:
+                    print("left")
+                    robot.movement.left_ward(speed=15, times=100)
             elif value == 2:
-                print("right")
-                robot.movement.right_ward(speed=5, times=300)
+                if time.time() - start_time < obszone_time:
+                    print("right")
+                    robot.movement.right_ward(speed=5, times=300)
+                else:
+                    print("right")
+                    robot.movement.right_ward(speed=15, times=100)
             elif value == 3:
                 if time.time() - start_time < obszone_time:
                     print("stop sign, but did not pass the obszone, so forward")
