@@ -15,8 +15,9 @@ width = 480
 height = 180
 channel = 1
 inference_path = tf.Graph()
-filepath = os.getcwd() + '/model/auto_drive_model/-326'
+filepath = os.getcwd() + '/model/auto_drive_model/-253'
 
+resized_height = int(width * 0.75)
 
 temp_image = np.zeros(width * height * channel, 'uint8')
 
@@ -44,14 +45,13 @@ def auto_pilot():
         while cap.isOpened():
             ret, frame = cap.read()
             frame = rev_cam(frame)
-            resized_height = int(width * 0.75)
             # 计算缩放比例
             frame = cv2.resize(frame, (width, resized_height))
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # slice the lower part of a frame
             res = frame[resized_height - height:, :]
-            cv2.imshow("frame", res)
-            cv2.waitKey(1)
+            #cv2.imshow("frame", res)
+            #cv2.waitKey(1)
             frame = np.array(res, dtype=np.float32)
             value = prediction.eval(feed_dict={tf_X: np.reshape(frame, [-1, height, width, channel])})
             print('img_out:', value)
@@ -62,24 +62,25 @@ def auto_pilot():
                     robot.movement.move_forward(speed=20, times=300)
                 else:
                     print("forward, but pass the obszone, so stop")
+                    robot.movement.move_forward(speed=20, times=300)
             elif value == 1:
                 if time.time() - start_time < obszone_time:
                     print("left")
-                    robot.movement.left_ward(speed=5, times=300)
+                    robot.movement.left_ward(speed=8, turn=100, times=120)
                 else:
                     print("left")
-                    robot.movement.left_ward(speed=15, times=100)
+                    robot.movement.left_ward(speed=20, turn=50, times=150)
             elif value == 2:
                 if time.time() - start_time < obszone_time:
                     print("right")
-                    robot.movement.right_ward(speed=5, times=300)
+                    robot.movement.right_ward(speed=8, turn=-100, times=120)
                 else:
                     print("right")
-                    robot.movement.right_ward(speed=15, times=100)
+                    robot.movement.right_ward(speed=20, turn=-50, times=150)
             elif value == 3:
                 if time.time() - start_time < obszone_time:
                     print("stop sign, but did not pass the obszone, so forward")
-                    robot.movement.move_forward(times=300)
+                    robot.movement.move_forward(speed=20, times=300)
                 else:
                     print("stop sign")
                 # robot.movement.hit()
@@ -92,8 +93,8 @@ def auto_pilot():
             elif value == 6:
                 print("Banner right")	
                 # robot.movement.right_ward()				
-            elif cv2.waitKey(1) & 0xFF ==ord('q'):
-                break
+            #elif cv2.waitKey(1) & 0xFF ==ord('q'):
+            #   break
         cv2.destroyAllWindows()
 
 if __name__ == '__main__':
