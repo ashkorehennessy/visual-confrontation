@@ -8,6 +8,25 @@ from rev_cam import rev_cam
 import time
 import os
 
+import cv2
+import numpy as np
+
+def detect_circles(img):                
+    # 对图像进行模糊处理，以减少噪声
+    blurred = cv2.GaussianBlur(img, (9, 9), 0)
+                            
+    # 运行霍夫圆变换来检测圆
+    circles = cv2.HoughCircles(blurred, cv2.HOUGH_GRADIENT, dp=1, minDist=150, param1=50, param2=30, minRadius=0, maxRadius=0)
+                                        
+    # 如果检测到圆
+    if circles is not None:
+        # 将圆心坐标和半径四舍五入到整数
+        circles = np.round(circles[0, :]).astype("int")                                                               
+        # 返回圆心坐标和半径
+        return circles
+                                                                                        
+    # 如果未检测到圆，返回None
+    return None
 
 class CollectTrainingData(object):
     """
@@ -60,7 +79,8 @@ class CollectTrainingData(object):
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # slice the lower part of a frame
             res = frame[resized_height - self.video_height:, :]
-            cv2.imshow("review", res)
+            #cv2.imshow("review", res)
+            print(detect_circles(res))
 
             command = cv2.waitKey(1) & 0xFF
             if command == ord('q'):
