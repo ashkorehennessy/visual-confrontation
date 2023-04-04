@@ -166,7 +166,7 @@ while not_save:
             if test_best < test_res:
                 test_best = test_res
                 best_test_epoch = epoch
-                if test_res > 0.94:
+                if test_res > 0.98:
                     model = tf.train.Saver()
                     model.save(sess=sess, save_path=save_path, global_step=best_test_epoch)
                     print("model step at", best_test_epoch, "is saved.")
