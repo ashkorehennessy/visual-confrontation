@@ -83,15 +83,27 @@ def auto_pilot():
                     robot.movement.move_forward(speed=20, times=120)
                 else:
                     print("stop sign")
-                # robot.movement.hit()
+                    # robot.movement.hit()
             elif value == 4:
-                print("Banner forward")
-                # robot.movement.move_forward(times=300)				
+                if time.time() - start_time < obszone_time:
+                    print("Banner forward, but did not pass the obszone, so forward")
+                    robot.movement.move_forward(speed=20, times=120)
+                else:
+                    print("Banner forward")
+                    # robot.movement.move_forward(times=300)				
             elif value == 5:
-                print("Banner left")
-                # robot.movement.left_ward()				
+                if time.time() - start_time < obszone_time:
+                    print("Banner left, but did not pass the obszone, so forward")
+                    robot.movement.move_forward(speed=20, times=120)
+                else:
+                    print("Banner left")
+                    # robot.movement.left_ward()				
             elif value == 6:
-                print("Banner right")	
+                if time.time() - start_time < obszone_time:
+                    print("Banner right, but did not pass the obszone, so forward")
+                    robot.movement.move_forward(speed=20, times=120)
+                else:
+                    print("Banner right")
                 # robot.movement.right_ward()				
             #elif cv2.waitKey(1) & 0xFF ==ord('q'):
             #   break
