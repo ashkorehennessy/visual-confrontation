@@ -61,21 +61,21 @@ class CollectTrainingData(object):
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # slice the lower part of a frame
             res = frame[resized_height - self.video_height:, :]
-            blurred = cv2.GaussianBlur(res, (9, 9), 0)
+            #blurred = cv2.GaussianBlur(res, (9, 9), 0)
                             
     # 运行霍夫圆变换来检测圆
-            circles = cv2.HoughCircles(blurred, cv2.HOUGH_GRADIENT, dp=1, minDist=150, param1=30, param2=80, minRadius=0, maxRadius=0)
+            #circles = cv2.HoughCircles(blurred, cv2.HOUGH_GRADIENT, dp=1, minDist=150, param1=30, param2=80, minRadius=0, maxRadius=0)
                                         
     # 如果检测到圆
-            if circles is not None:
+            #if circles is not None:
         # 将圆心坐标和半径四舍五入到整数
-                circles = np.round(circles[0, :]).astype("int")                                                               
+            #    circles = np.round(circles[0, :]).astype("int")                                                               
         # 返回圆心坐标和半径
-                for(x,y,r) in circles:
-                    cv2.circle(blurred,(x,y),r,(0,255,0),2)
-                    print("x="+str(x)+"  r="+str(r))
+            #    for(x,y,r) in circles:
+            #        cv2.circle(blurred,(x,y),r,(0,255,0),2)
+            #        print("x="+str(x)+"  r="+str(r))
                                                                                         
-            cv2.imshow("review", blurred)
+            cv2.imshow("review", res)
 
             command = cv2.waitKey(100) & 0xFF
             if command == ord('q'):
