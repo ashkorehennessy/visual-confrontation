@@ -173,12 +173,9 @@ while not_save:
                     not_save = False
                     time.sleep(5)
             print("Epoch:", epoch)
-            print("Train res:", res,
-                   ", best train accuracy is:",  train_best,
-                   "at epoch:", best_train_epoch)
-            print("Test res:", test_res,
-                  ", best test accuracy is:", test_best,
-                   "at epoch:", best_test_epoch)
+            print("Train res: {:.5%}, best train accuracy is: {:.5%} at epoch: {}".format(res, train_best, best_train_epoch))
+            print("Test res: {:.5%}, best test accuracy is: {:.5%} at epoch: {}".format(test_res, test_best, best_test_epoch))
+
             count = np.append(count, res)
             if len(count) >= 5:
                 count = count[-5:]
