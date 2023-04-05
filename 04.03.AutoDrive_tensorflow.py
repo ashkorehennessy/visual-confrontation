@@ -15,7 +15,7 @@ width = 480
 height = 180
 channel = 1
 inference_path = tf.Graph()
-filepath = os.getcwd() + '/model/auto_drive_model/-308'
+filepath = os.getcwd() + '/model/auto_drive_model/-476'
 
 resized_height = int(width * 0.75)
 
@@ -40,7 +40,7 @@ def auto_pilot():
         prediction = tf.argmax(number, 1)
 
         start_time = time.time() #开始时间
-        obszone_time = 21 #越过障碍区的时间
+        obszone_time = 27 #越过障碍区的时间
 
         while cap.isOpened():
             ret, frame = cap.read()
@@ -55,32 +55,35 @@ def auto_pilot():
             frame = np.array(res, dtype=np.float32)
             value = prediction.eval(feed_dict={tf_X: np.reshape(frame, [-1, height, width, channel])})
             print('img_out:', value)
+            if time.time() - start_time < 1:
+                robot.movement.move_forward(speed=25, times=120)
+                continue
 
             if value == 0:
                 if time.time() - start_time < obszone_time:
                     print("forward")
                     robot.movement.move_forward(speed=25, times=120)
                 else:
-                    print("forward, but pass the obszone, so stop")
+                    print("forward")
                     robot.movement.move_forward(speed=25, times=120)
             elif value == 1:
                 if time.time() - start_time < obszone_time:
                     print("left")
-                    robot.movement.left_ward(speed=23, turn=120, times=120)
+                    robot.movement.left_ward(speed=10, turn=150, times=120)
                 else:
                     print("left")
-                    robot.movement.left_ward(speed=30, turn=50, times=120)
+                    robot.movement.left_ward(speed=23, turn=80, times=120)
             elif value == 2:
                 if time.time() - start_time < obszone_time:
                     print("right")
-                    robot.movement.right_ward(speed=23, turn=-110, times=120)
+                    robot.movement.right_ward(speed=10, turn=-180, times=120)
                 else:
                     print("right")
-                    robot.movement.right_ward(speed=25, turn=-50, times=120)
+                    robot.movement.right_ward(speed=23, turn=-80, times=120)
             elif value == 3:
                 if time.time() - start_time < obszone_time:
                     print("stop sign, but did not pass the obszone, so forward")
-                    robot.movement.move_forward(speed=23, times=150)
+                    robot.movement.move_forward(speed=30, times=150)
                 else:
                     print("stop sign")
                     # robot.movement.hit()
