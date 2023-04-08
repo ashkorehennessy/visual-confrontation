@@ -40,6 +40,9 @@ class CollectTrainingData(object):
         self.collect_image()
 
     def collect_image(self):
+        
+        m = 5 #Gaussian
+        n = 1.0
 
         # 初始化数数
         total_images_collected = 0
@@ -50,7 +53,7 @@ class CollectTrainingData(object):
 
         # Send an action to begin program.
         # command.action()
-        self.mv.wave_hands()
+        self.mv.hit()
 
         while cap.isOpened():
             _, frame = cap.read()
@@ -59,8 +62,12 @@ class CollectTrainingData(object):
             # 计算缩放比例
             frame = cv2.resize(frame, (self.video_width, resized_height))
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            
+            
             # slice the lower part of a frame
             res = frame[resized_height - self.video_height:, :]
+            res_gauss = cv2.GaussianBlur(res, (m, m), sigmaX=n,sigmaY=n,borderType=cv2.BORDER_CONSTANT)
+
             #blurred = cv2.GaussianBlur(res, (9, 9), 0)
                             
     # 运行霍夫圆变换来检测圆
@@ -76,9 +83,26 @@ class CollectTrainingData(object):
             #        print("x="+str(x)+"  r="+str(r))
                                                                                         
             cv2.imshow("review", res)
-
+            cv2.imshow("review_gauss", res_gauss)
+            
             command = cv2.waitKey(100) & 0xFF
-            if command == ord('q'):
+            
+            if command == ord('='):
+                m = m+2
+                print("m = %d"%m)
+            elif command == ord('-'):
+                # if m>0:
+                m = m - 2
+                print("m = %d"%m)
+            elif command == ord('['):
+                n = n-0.5
+                print("n = %d"%n)
+            elif command == ord(']'):
+                # if m>0:
+                n = n+0.5
+                print("n = %d"%n)
+            
+            elif command == ord('q'):
                 break
             # forward -- 0
             elif command == ord('w'):
