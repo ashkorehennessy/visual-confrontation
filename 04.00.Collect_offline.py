@@ -1,5 +1,5 @@
 __author__ = 'Avi'
-
+import subprocess
 import numpy as np
 import cv2
 from robotpi_movement import Movement
@@ -10,6 +10,9 @@ import os
 
 import cv2
 import numpy as np
+subprocess.check_call("v4l2-ctl -d /dev/video0 -c white_balance_temperature_auto=0 -c brightness=-5 -c contrast=100 -c saturation=0 -c backlight_compensation=0 -c sharpness=15", shell=True)
+
+
 class CollectTrainingData(object):
     """
     input:
@@ -41,13 +44,10 @@ class CollectTrainingData(object):
 
     def collect_image(self):
         
-        m = 5 #Gaussian
-        n = 1.0
-
         # 初始化数数
         total_images_collected = 0
         num_list = [0, 0, 0, 0, 0, 0, 0]
-        cap = cv2.VideoCapture(0)
+        cap = cv2.VideoCapture(0) 
         images = np.zeros((1, self.video_height * self.video_width), dtype=float)
         labels = np.zeros((1, self.NUM), dtype=float)
 
@@ -66,7 +66,6 @@ class CollectTrainingData(object):
             
             # slice the lower part of a frame
             res = frame[resized_height - self.video_height:, :]
-            res_gauss = cv2.GaussianBlur(res, (m, m), sigmaX=n,sigmaY=n,borderType=cv2.BORDER_CONSTANT)
 
             #blurred = cv2.GaussianBlur(res, (9, 9), 0)
                             
@@ -81,28 +80,13 @@ class CollectTrainingData(object):
             #    for(x,y,r) in circles:
             #        cv2.circle(blurred,(x,y),r,(0,255,0),2)
             #        print("x="+str(x)+"  r="+str(r))
-                                                                                        
+            res = cv2.medianBlur(res,3)                                                                            
             cv2.imshow("review", res)
-            cv2.imshow("review_gauss", res_gauss)
+
             
-            command = cv2.waitKey(100) & 0xFF
+            command = cv2.waitKey(1) & 0xFF
             
-            if command == ord('='):
-                m = m+2
-                print("m = %d"%m)
-            elif command == ord('-'):
-                # if m>0:
-                m = m - 2
-                print("m = %d"%m)
-            elif command == ord('['):
-                n = n-0.5
-                print("n = %d"%n)
-            elif command == ord(']'):
-                # if m>0:
-                n = n+0.5
-                print("n = %d"%n)
-            
-            elif command == ord('q'):
+            if command == ord('q'):
                 break
             # forward -- 0
             elif command == ord('w'):

@@ -4,7 +4,9 @@ import tensorflow as tf
 from robotPi import robotPi
 import cv2
 import os
+import subprocess
 from rev_cam import rev_cam
+subprocess.check_call("v4l2-ctl -d /dev/video0 -c white_balance_temperature_auto=0 -c brightness=-5 -c contrast=100 -c saturation=0 -c backlight_compensation=0 -c sharpness=15", shell=True)
 # 1:[1,0,0,0] 前
 # 2:[0,1,0,0] 左
 # 3:[0,0,1,0] 右
@@ -15,7 +17,7 @@ width = 480
 height = 180
 channel = 1
 inference_path = tf.Graph()
-filepath = os.getcwd() + '/model/auto_drive_model/-476'
+filepath = os.getcwd() + '/model/auto_drive_model/-357'
 
 resized_height = int(width * 0.75)
 
@@ -50,8 +52,10 @@ def auto_pilot():
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # slice the lower part of a frame
             res = frame[resized_height - height:, :]
+            
+            res = cv2.medianBlur(res,3)
             #cv2.imshow("frame", res)
-            #cv2.waitKey(1)
+            cv2.waitKey(1)
             frame = np.array(res, dtype=np.float32)
             value = prediction.eval(feed_dict={tf_X: np.reshape(frame, [-1, height, width, channel])})
             print('img_out:', value)
