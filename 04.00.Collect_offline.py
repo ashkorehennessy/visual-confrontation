@@ -47,7 +47,7 @@ class CollectTrainingData(object):
         # 初始化数数
         total_images_collected = 0
         num_list = [0, 0, 0, 0, 0, 0, 0]
-        cap = cv2.VideoCapture(0) 
+        cap = cv2.VideoCapture('/dev/video0') 
         images = np.zeros((1, self.video_height * self.video_width), dtype=float)
         labels = np.zeros((1, self.NUM), dtype=float)
 
@@ -80,7 +80,7 @@ class CollectTrainingData(object):
             #    for(x,y,r) in circles:
             #        cv2.circle(blurred,(x,y),r,(0,255,0),2)
             #        print("x="+str(x)+"  r="+str(r))
-            res = cv2.medianBlur(res,3)                                                                            
+            res = cv2.medianBlur(res,13)                                                                            
             cv2.imshow("review", res)
 
             
