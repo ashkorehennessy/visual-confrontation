@@ -14,6 +14,15 @@ import sys
 from sklearn.model_selection import train_test_split
 import time
 
+# 高亮颜色
+GREEN = "\033[32m"
+BLUE = "\033[34m"
+ORANGE = "\033[38;5;208m"
+DARK_GREEN = "\033[38;5;22m"
+YELLOW = "\033[38;5;226m"
+RESET = "\033[0m"
+BOLD = "\033[1m"
+
 # 防止爆显存
 config = tf.compat.v1.ConfigProto(gpu_options=tf.compat.v1.GPUOptions(allow_growth=True))
 sess = tf.compat.v1.Session(config=config)
@@ -152,7 +161,7 @@ while not_save:
         test_best = 0
         best_test_epoch = 0
         for epoch in range(1000): # 迭代1000个周期
-            print("*******************************************************************")
+            print(BOLD + DARK_GREEN + "**********************************************************************" + RESET)
             for batch_xs,batch_ys in generatebatch(X,Y,Y.shape[0],batch_size): # 每个周期进行MBGD算法
                 sess.run(train_step,feed_dict={tf_X:batch_xs,tf_Y:batch_ys})
             res = sess.run(accuracy,feed_dict={tf_X:X,tf_Y:Y})
@@ -172,9 +181,9 @@ while not_save:
                     print("model step at", best_test_epoch, "is saved.")
                     not_save = False
                     time.sleep(5)
-            print("Epoch:", epoch)
-            print("Train res: {:.5%}, best train accuracy is: {:.5%} at epoch: {}".format(res, train_best, best_train_epoch))
-            print("Test res: {:.5%}, best test accuracy is: {:.5%} at epoch: {}".format(test_res, test_best, best_test_epoch))
+            print(BOLD + "Epoch:" + RESET, BOLD + GREEN + str(epoch) + RESET)
+            print(BOLD + "Train res: " + BLUE + "{:.5%}, ".format(res) + RESET + BOLD + "best train accuracy is:" +  ORANGE + " {:.5%}".format(train_best) + RESET, BOLD + "at epoch:" + RESET, BOLD + GREEN + str(best_train_epoch) + RESET)
+            print(BOLD + "Test res:  " + YELLOW + "{:.5%}, ".format(test_res) + RESET + BOLD + "best test accuracy is:" +  ORANGE + "  {:.5%}".format(test_best) + RESET, BOLD + "at epoch:" + RESET, BOLD + GREEN + str(best_test_epoch) + RESET)
 
             count = np.append(count, res)
             if len(count) >= 5:
