@@ -92,26 +92,26 @@ while True:
             yield batch_xs, batch_ys # 生成每一个batch
 
 
-    tf.reset_default_graph()
+    tf.compat.v1.reset_default_graph()
     # 输入层
-    tf_X = tf.placeholder(tf.float32, [None, height, width, channel], name='input') # 图像尺寸
-    tf_Y = tf.placeholder(tf.float32, [None, classes])
+    tf_X = tf.compat.v1.placeholder(tf.float32, [None, height, width, channel], name='input') # 图像尺寸
+    tf_Y = tf.compat.v1.placeholder(tf.float32, [None, classes])
 
 
     # 卷积层+激活层
-    conv_filter_w1 = tf.get_variable('W', [5, 5, 1, 10], initializer=tf.contrib.layers.xavier_initializer()) #tf.Variable(tf.random_normal([3, 3, 1, 10]))
-    conv_filter_b1 = tf.Variable(tf.random_normal([10]))
+    conv_filter_w1 = tf.compat.v1.get_variable('W', [5, 5, 1, 10], initializer=tf.contrib.layers.xavier_initializer()) #tf.Variable(tf.random.normal([3, 3, 1, 10]))
+    conv_filter_b1 = tf.Variable(tf.random.normal([10]))
     relu_feature_maps1 = tf.nn.relu(tf.nn.conv2d(tf_X, conv_filter_w1,strides=[1, 2, 2, 1], padding='SAME') + conv_filter_b1)
     print ("conv_out1:", relu_feature_maps1)
     # 池化层
-    max_pool1 = tf.nn.max_pool(relu_feature_maps1,ksize=[1,3,3,1],strides=[1,2,2,1],padding='SAME')
+    max_pool1 = tf.nn.max_pool2d(relu_feature_maps1,ksize=[1,3,3,1],strides=[1,2,2,1],padding='SAME')
 
     print ("max_pool:", max_pool1)
 
 
     # 卷积层
-    conv_filter_w2 = tf.Variable(tf.random_normal([3, 3, 10, 5]))
-    conv_filter_b2 =  tf.Variable(tf.random_normal([5]))
+    conv_filter_w2 = tf.Variable(tf.random.normal([3, 3, 10, 5]))
+    conv_filter_b2 =  tf.Variable(tf.random.normal([5]))
     conv_out2 = tf.nn.conv2d(max_pool1, conv_filter_w2, strides=[1, 1, 1, 1], padding='SAME') + conv_filter_b2
     print ("conv_out2:", conv_out2)
 
@@ -126,7 +126,7 @@ while True:
 
 
     # 池化层
-    max_pool2 = tf.nn.max_pool(relu_BN_maps2,ksize=[1,3,3,1],strides=[1,2,2,1],padding='SAME')
+    max_pool2 = tf.nn.max_pool2d(relu_BN_maps2,ksize=[1,3,3,1],strides=[1,2,2,1],padding='SAME')
     print ("max_pool2", max_pool2)
 
 
@@ -134,28 +134,28 @@ while True:
     max_pool2_flat = tf.reshape(max_pool2, [-1, 23*60*5])
 
     # 全连接层
-    fc_w1 = tf.Variable(tf.random_normal([23*60*5, 50]))
-    fc_b1 = tf.Variable(tf.random_normal([50]))
+    fc_w1 = tf.Variable(tf.random.normal([23*60*5, 50]))
+    fc_b1 = tf.Variable(tf.random.normal([50]))
     fc_out1 = tf.nn.relu(tf.matmul(max_pool2_flat, fc_w1) + fc_b1)
 
     dropout_keep_prob = 0.8
     fc1_drop = tf.nn.dropout(fc_out1, dropout_keep_prob)
 
     # 输出层
-    out_w1 = tf.Variable(tf.random_normal([50, classes]))
-    out_b1 = tf.Variable(tf.random_normal([classes]))
+    out_w1 = tf.Variable(tf.random.normal([50, classes]))
+    out_b1 = tf.Variable(tf.random.normal([classes]))
     pred = tf.nn.softmax(tf.matmul(fc1_drop, out_w1) + out_b1, name='pred')
 
-    loss = -tf.reduce_mean(tf_Y * tf.log(tf.clip_by_value(pred, 1e-11, 1.0)))
-    train_step = tf.train.AdamOptimizer(3e-4, name='train_step').minimize(loss)
+    loss = -tf.reduce_mean(tf_Y * tf.math.log(tf.clip_by_value(pred, 1e-11, 1.0)))
+    train_step = tf.compat.v1.train.AdamOptimizer(3e-4, name='train_step').minimize(loss)
 
     y_pred = tf.argmax(pred, 1)
     bool_pred = tf.equal(tf.argmax(tf_Y,1),y_pred)
 
     accuracy = tf.reduce_mean(tf.cast(bool_pred,tf.float32), name="accuracy") # 准确率
     print("Start training ...")
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
+    with tf.compat.v1.Session() as sess:
+        sess.run(tf.compat.v1.global_variables_initializer())
         train_best = 0
         best_train_epoch = 0
         count = []
