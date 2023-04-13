@@ -180,9 +180,10 @@ while True:
                 if test_res > 0.98:
                     test_res_str = '{:.4f}'.format(test_res)[2:]
                     save_path = "model/auto_drive_model/{}_{}/".format(test_res_str, timestamp)
-                    model = tf.train.Saver()
+                    model = tf.compat.v1.train.Saver()
                     model.save(sess=sess, save_path=save_path, global_step=best_test_epoch)
                     print(BOLD + "model step at " + GREEN + str(best_test_epoch) + RESET + BOLD + " is saved, Test res: " + YELLOW + "{:.5%}.".format(test_res) + RESET)
+                    print(BOLD + DARK_GREEN + "**********************************************************************" + RESET)
                     time.sleep(5)
             print(BOLD + "Epoch:" + RESET, BOLD + GREEN + str(epoch) + RESET)
             print(BOLD + "Train res: " + BLUE + "{:.5%}, ".format(res) + RESET + BOLD + "best train accuracy is:" +  ORANGE + " {:.5%}".format(train_best) + RESET, BOLD + "at epoch:" + RESET, BOLD + GREEN + str(best_train_epoch) + RESET)
