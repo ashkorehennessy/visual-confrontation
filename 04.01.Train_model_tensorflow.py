@@ -13,6 +13,7 @@ import glob
 import sys
 from sklearn.model_selection import train_test_split
 import time
+import datetime
 
 # 高亮颜色
 GREEN = "\033[32m"
@@ -27,8 +28,10 @@ BOLD = "\033[1m"
 config = tf.compat.v1.ConfigProto(gpu_options=tf.compat.v1.GPUOptions(allow_growth=True))
 sess = tf.compat.v1.Session(config=config)
 
-not_save = True
-while not_save:
+# 时间戳
+timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M')
+
+while True:
     # Loading dataset
     print("Loading dataset ...")
 
@@ -150,7 +153,6 @@ while not_save:
     bool_pred = tf.equal(tf.argmax(tf_Y,1),y_pred)
 
     accuracy = tf.reduce_mean(tf.cast(bool_pred,tf.float32), name="accuracy") # 准确率
-    save_path = "model/auto_drive_model/"
     print("Start training ...")
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -176,10 +178,11 @@ while not_save:
                 test_best = test_res
                 best_test_epoch = epoch
                 if test_res > 0.98:
+                    test_res_str = '{:.4f}'.format(test_res)[2:]
+                    save_path = "model/auto_drive_model/{}_{}/".format(test_res_str, timestamp)
                     model = tf.train.Saver()
                     model.save(sess=sess, save_path=save_path, global_step=best_test_epoch)
-                    print("model step at", best_test_epoch, "is saved.")
-                    not_save = False
+                    print(BOLD + "model step at " + GREEN + str(best_test_epoch) + RESET + BOLD + " is saved, Test res: " + YELLOW + "{:.5%}.".format(test_res) + RESET)
                     time.sleep(5)
             print(BOLD + "Epoch:" + RESET, BOLD + GREEN + str(epoch) + RESET)
             print(BOLD + "Train res: " + BLUE + "{:.5%}, ".format(res) + RESET + BOLD + "best train accuracy is:" +  ORANGE + " {:.5%}".format(train_best) + RESET, BOLD + "at epoch:" + RESET, BOLD + GREEN + str(best_train_epoch) + RESET)
