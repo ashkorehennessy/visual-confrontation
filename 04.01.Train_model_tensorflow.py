@@ -28,8 +28,7 @@ BOLD = "\033[1m"
 config = tf.compat.v1.ConfigProto(gpu_options=tf.compat.v1.GPUOptions(allow_growth=True))
 sess = tf.compat.v1.Session(config=config)
 
-# 时间戳
-timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M')
+timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
 
 while True:
     # Loading dataset
@@ -178,6 +177,7 @@ while True:
                 test_best = test_res
                 best_test_epoch = epoch
                 if test_res > 0.98:
+                    timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
                     test_res_str = '{:.4f}'.format(test_res)[2:]
                     save_path = "model/auto_drive_model/{}_{}/".format(test_res_str, timestamp)
                     model = tf.compat.v1.train.Saver()
