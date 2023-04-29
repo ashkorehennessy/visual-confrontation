@@ -1,3 +1,25 @@
+# 　　　　　      　 　_ooOoo_
+# 　　　　　      　　o8888888o
+# 　　　　　      　　88" . "88
+# 　　　　      　　　(| -_- |)
+# 　　　　      　　　O\  =  /O
+# 　　　　      　____/`---'\____
+# 　　　　      .'  \\|     |//  `.
+# 　　      　/  \\|||  :  |||//  \
+# 　　       /  _||||| -:- |||||-  \
+# 　　       |   | \\\  -  /// |   |
+# 　　       | \_|  ''\---/''  |   |
+# 　       　\  .-\__  `-`  ___/-. /
+# 　       ___`. .'  /--.--\  `. . __
+# 　    ."" '<  `.___\_<|>_/___.'  >'"".
+# 　   | | :  `- \`.;`\ _ /`;.`/ - ` : | |
+# 　   \  \ `-.   \_ __\ /__ _/   .-` /  /
+# ======`-.____`-.___\_____/___.-`____.-'======
+# 　　　　　　　　      `=---='
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# 　　　　　　　　佛祖保佑 代码无bug
+
+
 import numpy as np
 import time
 import tensorflow as tf
@@ -5,7 +27,6 @@ from robotPi import robotPi
 import cv2
 import os
 import subprocess
-from rev_cam import rev_cam
 subprocess.check_call("v4l2-ctl -d /dev/video0 -c white_balance_temperature_auto=0 -c brightness=-5 -c contrast=100 -c saturation=0 -c backlight_compensation=0 -c sharpness=15", shell=True)
 # 1:[1,0,0,0] 前
 # 2:[0,1,0,0] 左
@@ -46,7 +67,6 @@ def auto_pilot():
 
         while cap.isOpened():
             ret, frame = cap.read()
-            frame = rev_cam(frame)
             # 计算缩放比例
             frame = cv2.resize(frame, (width, resized_height))
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
