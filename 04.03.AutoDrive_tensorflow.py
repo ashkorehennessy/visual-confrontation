@@ -28,7 +28,7 @@ import cv2
 import os
 import subprocess
 from pid import PID
-subprocess.check_call("v4l2-ctl -d /dev/video0 -c white_balance_temperature_auto=0 -c brightness=-5 -c contrast=100 -c saturation=0 -c backlight_compensation=0 -c sharpness=15", shell=True)
+subprocess.check_call("v4l2-ctl -d /dev/video0 -c contrast=85 -c saturation=0 -c sharpness=13", shell=True)
 # 1:[1,0,0,0] 前
 # 2:[0,1,0,0] 左
 # 3:[0,0,1,0] 右
@@ -45,6 +45,7 @@ resized_height = int(width * 0.75)
 
 temp_image = np.zeros(width * height * channel, 'uint8')
 
+
 def circles_xyr(frame):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, 100, param1=100, param2=30, minRadius=10, maxRadius=100)
@@ -55,6 +56,7 @@ def circles_xyr(frame):
             return x, y, radius
     else:
         return None, None, None
+
 
 def auto_pilot():
     # a = np.array(frame, dtype=np.float32)
@@ -83,10 +85,10 @@ def auto_pilot():
         number = pred.outputs[0]
         prediction = tf.argmax(number, 1)
 
-        start_time = time.time() #开始时间
-        obszone_time = 21 #越过障碍区的时间
-        now_time = start_time #当前时间
-        enter_stop_zone = False #是否进入停止区
+        start_time = time.time()  # 开始时间
+        obszone_time = 21  # 越过障碍区的时间
+        now_time = start_time  # 当前时间
+        enter_stop_zone = False  # 是否进入停止区
 
         while now_time - start_time < obszone_time:
             ret, frame = front_cam.read()
@@ -95,10 +97,9 @@ def auto_pilot():
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # slice the lower part of a frame
             res = frame[resized_height - height:, :]
-            
 
-            #cv2.imshow("frame", res)
-            #cv2.waitKey(1)
+            # cv2.imshow("frame", res)
+            # cv2.waitKey(1)
             frame = np.array(res, dtype=np.float32)
             value = prediction.eval(feed_dict={tf_X: np.reshape(frame, [-1, height, width, channel])})
             print('img_out:', value)
@@ -124,7 +125,7 @@ def auto_pilot():
 
         while enter_stop_zone is False:
             ret, frame = back_cam.read()
-            x,y,r = circles_xyr(frame)
+            x, y, r = circles_xyr(frame)
             if x is None or y is None or r is None:
                 continue
             print('x=', x, 'y=', y, 'r=', r)
@@ -153,9 +154,3 @@ if __name__ == '__main__':
     # endTime=datetime.datetime.now()
     # print(endTime-startTime)
     ###############################################################
-
-
-
-
-
-
