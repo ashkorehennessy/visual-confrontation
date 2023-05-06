@@ -104,9 +104,10 @@ def auto_pilot():
             value = prediction.eval(feed_dict={tf_X: np.reshape(frame, [-1, height, width, channel])})
             print('img_out:', value)
             now_time = time.time()  # 更新当前时间
-            # if now_time - start_time < 2.5:
-            #     robot.movement.move_forward(speed=25, times=120)
-            #     continue
+            if now_time - start_time < 2.5:
+                robot.movement.move_forward(speed=25, times=120)
+                now_time = time.time()
+                continue
 
             if value == 0:
                 print("forward")
@@ -117,11 +118,9 @@ def auto_pilot():
             elif value == 2:
                 print("right")
                 robot.movement.right_ward(speed=22, turn=-125, times=120)
-            elif value == 3:
+            else:
                 print("stop sign, but did not pass the obszone, so forward")
                 robot.movement.move_forward(speed=22, times=120)
-            else:
-                continue
 
         while enter_stop_zone is False:
             ret, frame = back_cam.read()

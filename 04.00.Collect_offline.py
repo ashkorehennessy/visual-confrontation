@@ -57,7 +57,8 @@ class CollectTrainingData(object):
 
         while cap.isOpened():
             _, frame = cap.read()
-            frame = rev_cam(frame)#摄像头倒转添加
+            frame = cv2.flip(frame,1)
+            frame = cv2.flip(frame,0)#摄像头倒转添加
             resized_height = int(self.video_width * 0.75)
             # 计算缩放比例
             frame = cv2.resize(frame, (self.video_width, resized_height))
@@ -80,7 +81,7 @@ class CollectTrainingData(object):
             #    for(x,y,r) in circles:
             #        cv2.circle(blurred,(x,y),r,(0,255,0),2)
             #        print("x="+str(x)+"  r="+str(r))
-            res = cv2.medianBlur(res,13)                                                                            
+            #res = cv2.medianBlur(res,13)                                                                            
             cv2.imshow("review", res)
 
             

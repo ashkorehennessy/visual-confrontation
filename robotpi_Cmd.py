@@ -43,7 +43,15 @@ class UPComBotCommand():
 
     def hit(self):
         data = [0] * 1
-        data[0] = 5 & 0xFF
+        data[0] = 7 & 0xFF
+
+        buffer, length = self.GenerateCmd(0x07, 0x55, 0x01, data)
+        print(type(buffer))
+        return buffer
+
+    def hit1(self):
+        data = [0] * 1
+        data[0] = 8 & 0xFF
 
         buffer, length = self.GenerateCmd(0x07, 0x55, 0x01, data)
         print(type(buffer))
