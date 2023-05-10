@@ -97,24 +97,32 @@ class Movement:
             return True
         return False
 
+    def prepare(self):
+        if self.isOpen:
+            command = self.cmd.prepare()
+            self.action.write_serial(command)
+            #time.sleep(3)
+            return True
+        return False
+
     def hit(self):
         if self.isOpen:
             command = self.cmd.hit()
             self.action.write_serial(command)
-            time.sleep(3)
+            #time.sleep(3)
             return True
         return False
 
-    def left_ward(self, speed=5, turn=150, times=500):
+    def left_ward(self, angle=0, speed=5, turn=150, times=500):
         if self.isOpen:
-            command = self.cmd.Command(0, speed, turn, times)
+            command = self.cmd.Command(angle, speed, turn, times)
             self.action.write_serial(command)
             return True
         return False
 
-    def right_ward(self, speed=5, turn=-150, times=500):
+    def right_ward(self, angle=0, speed=5, turn=-150, times=500):
         if self.isOpen:
-            command = self.cmd.Command(0, speed, turn, times)
+            command = self.cmd.Command(angle, speed, turn, times)
             self.action.write_serial(command)
             return True
         return False

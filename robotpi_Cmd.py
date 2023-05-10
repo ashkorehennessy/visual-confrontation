@@ -41,7 +41,7 @@ class UPComBotCommand():
         buffer, length = self.GenerateCmd(0x07, 0x55, 0x01, data)
         return buffer
 
-    def hit(self):
+    def prepare(self):
         data = [0] * 1
         data[0] = 7 & 0xFF
 
@@ -49,7 +49,7 @@ class UPComBotCommand():
         print(type(buffer))
         return buffer
 
-    def hit1(self):
+    def hit(self):
         data = [0] * 1
         data[0] = 8 & 0xFF
 

@@ -1,5 +1,5 @@
 __author__ = 'Avi'
-import subprocess
+#import subprocess
 import numpy as np
 import cv2
 from robotpi_movement import Movement
@@ -10,7 +10,7 @@ import os
 
 import cv2
 import numpy as np
-subprocess.check_call("v4l2-ctl -d /dev/video0 -c white_balance_temperature_auto=0 -c brightness=-5 -c contrast=100 -c saturation=0 -c backlight_compensation=0 -c sharpness=15", shell=True)
+#subprocess.check_call("v4l2-ctl -d /dev/video0 -c white_balance_temperature_auto=0 -c brightness=-5 -c contrast=100 -c saturation=0 -c backlight_compensation=0 -c sharpness=15", shell=True)
 
 
 class CollectTrainingData(object):
