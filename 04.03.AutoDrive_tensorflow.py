@@ -25,11 +25,12 @@ import time
 import tensorflow as tf
 from robotPi import robotPi
 import cv2
+import sys
 import os
 import subprocess
 from rev_cam import rev_cam
 from pid import PID
-subprocess.check_call("v4l2-ctl -d /dev/video0 -c contrast=40 -c saturation=0 -c sharpness=5", shell=True)
+subprocess.check_call("v4l2-ctl -d /dev/video2 -c contrast=50 -c saturation=0 -c sharpness=5", shell=True)
 # 1:[1,0,0,0] 前
 # 2:[0,1,0,0] 左
 # 3:[0,0,1,0] 右
@@ -40,7 +41,7 @@ width = 480
 height = 180
 channel = 1
 inference_path = tf.Graph()
-filepath = os.getcwd() + '/model/auto_drive_model/-776'
+filepath = os.getcwd() + '/model/9928_20230516_184406/-557'
 
 resized_height = int(width * 0.75)
 
@@ -50,11 +51,11 @@ temp_image = np.zeros(width * height * channel, 'uint8')
 def auto_pilot():
     # a = np.array(frame, dtype=np.float32)
     # _, prediction = model.predict(a.reshape(1, width * height))
-    front_cam = cv2.VideoCapture('/dev/video0')
+    front_cam = cv2.VideoCapture('/dev/video2')
     # set front_cam resolution to 160*120
     #front_cam.set(3, 160)
     #front_cam.set(4, 120)
-    back_cam = cv2.VideoCapture('/dev/video2')
+    back_cam = cv2.VideoCapture('/dev/video0')
     # set back_cam resolution to 160*120
     #back_cam.set(3, 160)
     #back_cam.set(4, 120)
@@ -79,14 +80,19 @@ def auto_pilot():
         now_time = start_time  # 当前时间
         enter_stop_zone = False  # 是否进入停止区
         banner_adjust = False  # 是否调整靶子
-        robot.movement.prepare()
+        #robot.movement.prepare()
+
+        while True:
+            if sys.stdin.read(1) == ' ':
+                break
+        start_time = time.time()
         while time.time() - start_time < 2.5:
             ret, frame = front_cam.read()
             # 计算缩放比例
             frame = cv2.resize(frame, (width, resized_height))
-            #frame = cv2.flip(frame,1)
-            #frame = cv2.flip(frame,0)
-            frame = rev_cam(frame)
+            frame = cv2.flip(frame,1)
+            frame = cv2.flip(frame,0)
+            #frame = rev_cam(frame)
 
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # slice the lower part of a frame
@@ -111,9 +117,9 @@ def auto_pilot():
             ret, frame = front_cam.read()
             # 计算缩放比例
             frame = cv2.resize(frame, (width, resized_height))
-            #frame = cv2.flip(frame,1)
-            #frame = cv2.flip(frame,0)
-            frame = rev_cam(frame)
+            frame = cv2.flip(frame,1)
+            frame = cv2.flip(frame,0)
+            #frame = rev_cam(frame)
 
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # slice the lower part of a frame
@@ -132,12 +138,12 @@ def auto_pilot():
                 robot.movement.move_forward(speed=30, times=100)
             elif value == 1:
                 print("left")
-                robot.movement.left_ward(speed=26, turn=160, times=100)
+                robot.movement.left_ward(speed=26, turn=160, times=90)
             elif value == 2:
                 print("right")
                 robot.movement.right_ward(speed=26, turn=-160, times=100)
             else:
-                print("stop sign, but did not pass the obszone, so forward")
+                print("stop sign, but forward")
                 robot.movement.move_forward(speed=24, times=100)
 
         # 通过障碍区
@@ -145,9 +151,9 @@ def auto_pilot():
             ret, frame = front_cam.read()
             # 计算缩放比例
             frame = cv2.resize(frame, (width, resized_height))
-            #frame = cv2.flip(frame,1)
-            #frame = cv2.flip(frame,0)
-            frame = rev_cam(frame)
+            frame = cv2.flip(frame,1)
+            frame = cv2.flip(frame,0)
+            #frame = rev_cam(frame)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # slice the lower part of a frame
             res = frame[resized_height - height:, :]
@@ -162,18 +168,18 @@ def auto_pilot():
             if value == 0:
                 print("forward")
                 robot.movement.move_forward(speed=35, times=100)
-                stop_count = 0
+                #stop_count = 0
             elif value == 1:
                 print("left")
                 robot.movement.left_ward(speed=30, turn=70, times=100)
-                stop_count = 0
+                #stop_count = 0
             elif value == 2:
                 print("right")
                 robot.movement.right_ward(speed=30, turn=-70, times=100)
-                stop_count = 0
+                #stop_count = 0
             elif value == 3:
                 print("stop sign")
-                stop_count += 1
+                #stop_count += 1
                 enter_stop_zone = True
             else:
                 robot.movement.move_forward(speed=35, times=100)
@@ -181,15 +187,20 @@ def auto_pilot():
             #if stop_count == 2:
             #    enter_stop_zone = True
 
-        robot.movement.move_forward(speed=15, times=1000)
+        robot.movement.move_forward(speed=20, times=1500)
+        time.sleep(1)
+        robot.movement.prepare()
         start_time = time.time()
-        while time.time() - start_time < 2.5:
+        while time.time() - start_time < 0.5:
+            pass
+        start_time = time.time()
+        while time.time() - start_time < 3.5:
             ret, frame = back_cam.read()
             # 计算缩放比例
             frame = cv2.resize(frame, (width, resized_height))
-            #frame = cv2.flip(frame,1)
-            #frame = cv2.flip(frame,0)
-            frame = rev_cam(frame)
+            frame = cv2.flip(frame,1)
+            frame = cv2.flip(frame,0)
+            #frame = rev_cam(frame)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # slice the lower part of a frame
             res = frame[resized_height - height:, :]
@@ -203,7 +214,7 @@ def auto_pilot():
 
             if value == 5:
                 print("banner left")
-                robot.movement.left_ward(angle=90, speed=10, turn=0, times=100)
+                robot.movement.left_ward(angle=90, speed=10, turn=20, times=100)
                 banner_adjust = True
             elif value == 6:
                 print("banner right")
@@ -212,18 +223,22 @@ def auto_pilot():
             elif value == 0:
                 if banner_adjust is False:
                     print("banner left")
-                    robot.movement.left_ward(angle=90 ,speed=10, turn=0, times=500)
+                    robot.movement.left_ward(angle=90 ,speed=15, turn=30, times=1000)
+                    time.sleep(1)
                     banner_adjust = True
-                else:
-                    print("banner hit ready")
+            elif value == 1:
+                print("banner left")
+                robot.movement.left_ward(angle=90 ,speed=10, turn=50, times=100)
+ 
+            else:
+                print("banner hit ready")
 
        # hit the target
-        #robot.movement.move_forward(speed=25, times=1000)
         #time.sleep(1)
+        #robot.movement.prepare()
+        robot.movement.move_forward(speed=25, times=500)
         robot.movement.hit()
-        #time.sleep(1)
         robot.movement.move_forward(speed=25, times=1500)
-
 
 if __name__ == '__main__':
 
