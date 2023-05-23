@@ -1,5 +1,5 @@
 __author__ = 'Avi'
-#import subprocess
+import subprocess
 import numpy as np
 import cv2
 from robotpi_movement import Movement
@@ -237,6 +237,7 @@ class CollectTrainingData(object):
             np.savez(self.data_path + '/' + self.saved_file_name + '.npz', train=img, train_labels=lbl, num_list=num_list)
         except IOError as e:
             print(e)
+    subprocess.check_call("sudo sync", shell=True)
     cv2.destroyAllWindows()
 
 if __name__ == '__main__':

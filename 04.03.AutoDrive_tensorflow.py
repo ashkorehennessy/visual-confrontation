@@ -30,7 +30,7 @@ import os
 import subprocess
 from rev_cam import rev_cam
 from pid import PID
-subprocess.check_call("v4l2-ctl -d /dev/video2 -c contrast=50 -c saturation=0 -c sharpness=5", shell=True)
+subprocess.check_call("v4l2-ctl -d /dev/video2 -c contrast=60 -c saturation=0 -c sharpness=5", shell=True)
 # 1:[1,0,0,0] 前
 # 2:[0,1,0,0] 左
 # 3:[0,0,1,0] 右
@@ -41,7 +41,7 @@ width = 480
 height = 180
 channel = 1
 inference_path = tf.Graph()
-filepath = os.getcwd() + '/model/9928_20230516_184406/-557'
+filepath = os.getcwd() + '/model/auto_drive_model/-776'
 
 resized_height = int(width * 0.75)
 
@@ -76,7 +76,7 @@ def auto_pilot():
         prediction = tf.argmax(number, 1)
 
         start_time = time.time()  # 开始时间
-        obszone_time = 21  # 越过障碍区的时间
+        obszone_time = 18  # 越过障碍区的时间
         now_time = start_time  # 当前时间
         enter_stop_zone = False  # 是否进入停止区
         banner_adjust = False  # 是否调整靶子
@@ -135,16 +135,16 @@ def auto_pilot():
 
             if value == 0:
                 print("forward")
-                robot.movement.move_forward(speed=30, times=100)
+                robot.movement.move_forward(speed=38, times=95)
             elif value == 1:
                 print("left")
-                robot.movement.left_ward(speed=26, turn=160, times=90)
+                robot.movement.left_ward(speed=30, turn=175, times=95)
             elif value == 2:
                 print("right")
-                robot.movement.right_ward(speed=26, turn=-160, times=100)
+                robot.movement.right_ward(speed=30, turn=-175, times=95)
             else:
                 print("stop sign, but forward")
-                robot.movement.move_forward(speed=24, times=100)
+                robot.movement.move_forward(speed=20, times=95)
 
         # 通过障碍区
         while enter_stop_zone is False:
@@ -167,34 +167,29 @@ def auto_pilot():
 
             if value == 0:
                 print("forward")
-                robot.movement.move_forward(speed=35, times=100)
+                robot.movement.move_forward(speed=43, times=95)
                 #stop_count = 0
             elif value == 1:
                 print("left")
-                robot.movement.left_ward(speed=30, turn=70, times=100)
+                robot.movement.left_ward(speed=36, turn=90, times=95)
                 #stop_count = 0
             elif value == 2:
                 print("right")
-                robot.movement.right_ward(speed=30, turn=-70, times=100)
+                robot.movement.right_ward(speed=36, turn=-90, times=95)
                 #stop_count = 0
             elif value == 3:
                 print("stop sign")
                 #stop_count += 1
                 enter_stop_zone = True
             else:
-                robot.movement.move_forward(speed=35, times=100)
+                robot.movement.move_forward(speed=43, times=95)
             #    stop_count = 0
             #if stop_count == 2:
             #    enter_stop_zone = True
 
-        robot.movement.move_forward(speed=20, times=1500)
-        time.sleep(1)
         robot.movement.prepare()
         start_time = time.time()
-        while time.time() - start_time < 0.5:
-            pass
-        start_time = time.time()
-        while time.time() - start_time < 3.5:
+        while time.time() - start_time < 2.5:
             ret, frame = back_cam.read()
             # 计算缩放比例
             frame = cv2.resize(frame, (width, resized_height))
@@ -220,15 +215,15 @@ def auto_pilot():
                 print("banner right")
                 robot.movement.left_ward(angle=270, speed=10, turn=0, times=100)
                 banner_adjust = True
-            elif value == 0:
-                if banner_adjust is False:
-                    print("banner left")
-                    robot.movement.left_ward(angle=90 ,speed=15, turn=30, times=1000)
-                    time.sleep(1)
-                    banner_adjust = True
+            #elif value == 0:
+            #    if banner_adjust is False:
+            #        print("banner left")
+            #        robot.movement.left_ward(angle=90 ,speed=15, turn=40, times=1000)
+            #        time.sleep(1)
+            #        banner_adjust = True
             elif value == 1:
                 print("banner left")
-                robot.movement.left_ward(angle=90 ,speed=10, turn=50, times=100)
+                robot.movement.left_ward(angle=90 ,speed=20, turn=50, times=100)
  
             else:
                 print("banner hit ready")
@@ -238,7 +233,7 @@ def auto_pilot():
         #robot.movement.prepare()
         robot.movement.move_forward(speed=25, times=500)
         robot.movement.hit()
-        robot.movement.move_forward(speed=25, times=1500)
+        robot.movement.move_forward(speed=25, times=1800)
 
 if __name__ == '__main__':
 
