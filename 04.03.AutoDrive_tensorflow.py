@@ -30,7 +30,7 @@ import os
 import subprocess
 from rev_cam import rev_cam
 from pid import PID
-subprocess.check_call("v4l2-ctl -d /dev/video2 -c contrast=60 -c saturation=0 -c sharpness=5", shell=True)
+subprocess.check_call("v4l2-ctl -d /dev/video2 -c contrast=55 -c saturation=0 -c sharpness=5", shell=True)
 # 1:[1,0,0,0] 前
 # 2:[0,1,0,0] 左
 # 3:[0,0,1,0] 右
@@ -47,7 +47,6 @@ resized_height = int(width * 0.75)
 
 temp_image = np.zeros(width * height * channel, 'uint8')
 
-
 def auto_pilot():
     # a = np.array(frame, dtype=np.float32)
     # _, prediction = model.predict(a.reshape(1, width * height))
@@ -63,6 +62,21 @@ def auto_pilot():
     speed_pid = PID(Kp=0, Ki=0, Kd=0, outmax=50, outmin=0)
     turn_pid = PID(Kp=0, Ki=0, Kd=0, outmax=100, outmin=-100)
     robot = robotPi()
+
+    def back():
+        robot.movement.move_forward(speed=25, times=4000)
+        time.sleep(4)
+        robot.movement.left_ward(angle=90, speed=25, turn=0, times=8000)
+        time.sleep(8)
+        robot.movement.left_ward(angle=180, speed=25, turn=0, times=4000)
+        time.sleep(4)
+        robot.movement.left_ward(angle=270, speed=25, turn=0, times=800)
+        time.sleep(1)
+        robot.movement.left_ward(angle=0, speed=0, turn=-180, times=1000)
+        time.sleep(1)
+        robot.movement.left_ward(angle=0, speed=25, turn=0, times=2000)
+
+
 
     with tf.Session(graph=inference_path) as sess:
         init = tf.global_variables_initializer()
@@ -167,15 +181,15 @@ def auto_pilot():
 
             if value == 0:
                 print("forward")
-                robot.movement.move_forward(speed=43, times=95)
+                robot.movement.move_forward(speed=45, times=95)
                 #stop_count = 0
             elif value == 1:
                 print("left")
-                robot.movement.left_ward(speed=36, turn=90, times=95)
+                robot.movement.left_ward(speed=36, turn=78, times=95)
                 #stop_count = 0
             elif value == 2:
                 print("right")
-                robot.movement.right_ward(speed=36, turn=-90, times=95)
+                robot.movement.right_ward(speed=36, turn=-78, times=95)
                 #stop_count = 0
             elif value == 3:
                 print("stop sign")
@@ -231,9 +245,12 @@ def auto_pilot():
        # hit the target
         #time.sleep(1)
         #robot.movement.prepare()
+
         robot.movement.move_forward(speed=25, times=500)
         robot.movement.hit()
         robot.movement.move_forward(speed=25, times=1800)
+        back()
+
 
 if __name__ == '__main__':
 
