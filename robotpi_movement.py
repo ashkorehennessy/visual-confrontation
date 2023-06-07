@@ -105,6 +105,14 @@ class Movement:
             return True
         return False
 
+    def reset(self):
+        if self.isOpen:
+            command = self.cmd.reset()
+            self.action.write_serial(command)
+            #time.sleep(3)
+            return True
+        return False
+
     def hit(self):
         if self.isOpen:
             command = self.cmd.hit()

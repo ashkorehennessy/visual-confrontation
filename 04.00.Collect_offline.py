@@ -23,10 +23,10 @@ class CollectTrainingData(object):
     """
     def __init__(self):
 
-        self.raw_height = 480  # 原始视频高度
-        self.raw_width = 640  # 原始视频宽度
-        self.video_width = 480  # 截取图像宽度
-        self.video_height = 180  # 截取图像高度
+        self.raw_height = 120  # 原始视频高度
+        self.raw_width = 160  # 原始视频宽度
+        self.video_width = 160  # 截取图像宽度
+        self.video_height = 45  # 截取图像高度
         self.NUM = 7  # 分类数量：0, 1, 2, 3, 4, 5, 6
         self.range = 100 # 每个分类的图片数
         self.data_path = "dataset"
@@ -47,7 +47,9 @@ class CollectTrainingData(object):
         # 初始化数数
         total_images_collected = 0
         num_list = [0, 0, 0, 0, 0, 0, 0]
-        cap = cv2.VideoCapture('/dev/video2') 
+        cap = cv2.VideoCapture('/dev/video0')
+        cap.set(3,160)
+        cap.set(4,120)
         images = np.zeros((1, self.video_height * self.video_width), dtype=float)
         labels = np.zeros((1, self.NUM), dtype=float)
 
@@ -57,16 +59,16 @@ class CollectTrainingData(object):
 
         while cap.isOpened():
             _, frame = cap.read()
-            frame = cv2.flip(frame,1)
-            frame = cv2.flip(frame,0)#摄像头倒转添加
+            #frame = cv2.flip(frame,1)
+            #frame = cv2.flip(frame,0)#摄像头倒转添加
             resized_height = int(self.video_width * 0.75)
             # 计算缩放比例
-            frame = cv2.resize(frame, (self.video_width, resized_height))
+            #frame = cv2.resize(frame, (self.video_width, resized_height))
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             
             
             # slice the lower part of a frame
-            res = frame[resized_height - self.video_height:, :]
+            res = frame[120-45:, :]
 
             #blurred = cv2.GaussianBlur(res, (9, 9), 0)
                             

@@ -30,18 +30,18 @@ import os
 import subprocess
 from rev_cam import rev_cam
 from pid import PID
-subprocess.check_call("v4l2-ctl -d /dev/video2 -c contrast=55 -c saturation=0 -c sharpness=5", shell=True)
+#subprocess.check_call("v4l2-ctl -d /dev/video2 -c contrast=55 -c saturation=0 -c sharpness=5", shell=True)
 # 1:[1,0,0,0] 前
 # 2:[0,1,0,0] 左
 # 3:[0,0,1,0] 右
 # 4:[0,0,0,1] 后
 
 
-width = 480
-height = 180
+width = 160
+height = 45
 channel = 1
 inference_path = tf.Graph()
-filepath = os.getcwd() + '/model/auto_drive_model/-776'
+filepath = os.getcwd() + '/model/0000_20230606_123822_small/-188'
 
 resized_height = int(width * 0.75)
 
@@ -50,10 +50,10 @@ temp_image = np.zeros(width * height * channel, 'uint8')
 def auto_pilot():
     # a = np.array(frame, dtype=np.float32)
     # _, prediction = model.predict(a.reshape(1, width * height))
-    front_cam = cv2.VideoCapture('/dev/video2')
+    front_cam = cv2.VideoCapture('/dev/video0')
     # set front_cam resolution to 160*120
-    #front_cam.set(3, 160)
-    #front_cam.set(4, 120)
+    front_cam.set(3, 160)
+    front_cam.set(4, 120)
     back_cam = cv2.VideoCapture('/dev/video0')
     # set back_cam resolution to 160*120
     #back_cam.set(3, 160)
@@ -90,58 +90,75 @@ def auto_pilot():
         prediction = tf.argmax(number, 1)
 
         start_time = time.time()  # 开始时间
-        obszone_time = 18  # 越过障碍区的时间
+        obszone_time = 11  # 越过障碍区的时间
         now_time = start_time  # 当前时间
         enter_stop_zone = False  # 是否进入停止区
         banner_adjust = False  # 是否调整靶子
+        stop_count = 0
+        flagr = 0
         #robot.movement.prepare()
 
         while True:
             if sys.stdin.read(1) == ' ':
                 break
         start_time = time.time()
-        while time.time() - start_time < 2.5:
-            ret, frame = front_cam.read()
+        while time.time() - start_time < 0.6:
+            
+            _, frame = front_cam.read()
             # 计算缩放比例
-            frame = cv2.resize(frame, (width, resized_height))
-            frame = cv2.flip(frame,1)
-            frame = cv2.flip(frame,0)
-            #frame = rev_cam(frame)
+            #frame = cv2.resize(frame, (width, resized_height))
+            frame = frame[resized_height - height:, :]
 
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            # slice the lower part of a frame
-            res = frame[resized_height - height:, :]
-
-            # cv2.imshow("frame", res)
-            # cv2.waitKey(1)
-            frame = np.array(res, dtype=np.float32)
-            value = prediction.eval(feed_dict={tf_X: np.reshape(frame, [-1, height, width, channel])})
-            print('img_out:', value)
-            now_time = time.time()  # 更新当前
-            if value == 1:
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            #cv2.imshow("gray", gray)
+            # 二值化
+            ret, binary = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
+            #cv2.imshow("binary", binary)
+            # 转换为二维数组
+            binary = np.array(binary, dtype=np.uint8)
+            # 非0元素转换为1
+            binary[binary != 0] = 1
+            # 分割成左右两部分
+            left = binary[:, :width // 2]
+            right = binary[:, width // 2:]
+            # 计算左右两部分的白色像素点个数
+            left_count = np.sum(left == 1)
+            right_count = np.sum(right == 1)
+            # 计算左右两部分的白色像素点个数之差
+            diff = left_count - right_count
+            # 输出信息
+            print("left_count:" + str(left_count) + " right_count:" + str(right_count) + " diff:" + str(diff) + " result:",end=" ")
+            if diff > 300:
                 print("left")
-                robot.movement.left_ward(speed=0, turn=140, times=100)
-            elif value == 2:
+                robot.movement.left_ward(speed=0, turn=320, times=160)
+            elif diff < -300:
                 print("right")
-                robot.movement.right_ward(speed=0, turn=-135, times=100)
+                robot.movement.left_ward(speed=0, turn=-320, times=160)
+            else:
+                print("ready!")
+
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
 
         # 未通过障碍区
         while now_time - start_time < obszone_time:
             ret, frame = front_cam.read()
             # 计算缩放比例
-            frame = cv2.resize(frame, (width, resized_height))
-            frame = cv2.flip(frame,1)
-            frame = cv2.flip(frame,0)
+            #frame = cv2.resize(frame, (width, resized_height))
+            #frame = cv2.flip(frame,1)
+            #frame = cv2.flip(frame,0)
             #frame = rev_cam(frame)
 
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            #ret, frame = cv2.threshold(frame, 150, 255, cv2.THRESH_BINARY)
+
             # slice the lower part of a frame
-            res = frame[resized_height - height:, :]
+            frame = frame[resized_height - height:, :]
 
             # cv2.imshow("frame", res)
             # cv2.waitKey(1)
-            frame = np.array(res, dtype=np.float32)
+            frame = np.array(frame, dtype=np.float32)
             value = prediction.eval(feed_dict={tf_X: np.reshape(frame, [-1, height, width, channel])})
             print('img_out:', value)
             now_time = time.time()  # 更新当前时间
@@ -149,74 +166,94 @@ def auto_pilot():
 
             if value == 0:
                 print("forward")
-                robot.movement.move_forward(speed=38, times=95)
+                robot.movement.move_forward(speed=60, times=200)
+                flagr = 0
             elif value == 1:
                 print("left")
-                robot.movement.left_ward(speed=30, turn=175, times=95)
+                robot.movement.left_ward(speed=55, turn=280, times=200)
+                flagr = -1
             elif value == 2:
                 print("right")
-                robot.movement.right_ward(speed=30, turn=-175, times=95)
+                flagr += 1
+                if flagr > 1:
+                    robot.movement.right_ward(speed=55, turn=-280, times=200)
+                else:
+                    robot.movement.move_forward(speed=60, times=200)
             else:
                 print("stop sign, but forward")
-                robot.movement.move_forward(speed=20, times=95)
+                robot.movement.move_forward(speed=50, times=200)
+                flagr = 0
 
         # 通过障碍区
         while enter_stop_zone is False:
             ret, frame = front_cam.read()
             # 计算缩放比例
-            frame = cv2.resize(frame, (width, resized_height))
-            frame = cv2.flip(frame,1)
-            frame = cv2.flip(frame,0)
+            #frame = cv2.resize(frame, (width, resized_height))
+            #frame = cv2.flip(frame,1)
+            #frame = cv2.flip(frame,0)
             #frame = rev_cam(frame)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # slice the lower part of a frame
-            res = frame[resized_height - height:, :]
+            frame = frame[resized_height - height:, :]
+            ret, frame = cv2.threshold(frame, 150, 255, cv2.THRESH_BINARY)
+
 
             # cv2.imshow("frame", res)
             # cv2.waitKey(1)
-            frame = np.array(res, dtype=np.float32)
+            frame = np.array(frame, dtype=np.float32)
             value = prediction.eval(feed_dict={tf_X: np.reshape(frame, [-1, height, width, channel])})
             print('img_out:', value)
             now_time = time.time()  # 更新当前时间
 
             if value == 0:
                 print("forward")
-                robot.movement.move_forward(speed=45, times=95)
-                #stop_count = 0
+                robot.movement.move_forward(speed=60, times=200)
+                flagr = 0
+                stop_count = 0
             elif value == 1:
                 print("left")
-                robot.movement.left_ward(speed=36, turn=78, times=95)
-                #stop_count = 0
+                robot.movement.left_ward(speed=55, turn=120, times=200)
+                flagr = -1
+                stop_count = 0
             elif value == 2:
                 print("right")
-                robot.movement.right_ward(speed=36, turn=-78, times=95)
-                #stop_count = 0
+                flagr += 1
+                if flagr > 1:
+                    robot.movement.right_ward(speed=55, turn=-120, times=200)
+                else:
+                    robot.movement.move_forward(speed=60, times=200)
+                stop_count = 0
             elif value == 3:
                 print("stop sign")
-                #stop_count += 1
-                enter_stop_zone = True
+                robot.movement.right_ward(speed=50, turn=-60, times=200)
+                flagr = 0
+                stop_count += 1
+                #enter_stop_zone = True
             else:
-                robot.movement.move_forward(speed=43, times=95)
-            #    stop_count = 0
-            #if stop_count == 2:
-            #    enter_stop_zone = True
+                robot.movement.move_forward(speed=50, times=200)
+                flagr = 0 
+                stop_count = 0
+            if stop_count == 2:
+                enter_stop_zone = True
+            if time.time() - start_time < 12:
+                stop_count = 0
 
         robot.movement.prepare()
         start_time = time.time()
-        while time.time() - start_time < 2.5:
-            ret, frame = back_cam.read()
+        while time.time() - start_time < 1.5:
+            ret, frame = front_cam.read()
             # 计算缩放比例
-            frame = cv2.resize(frame, (width, resized_height))
-            frame = cv2.flip(frame,1)
-            frame = cv2.flip(frame,0)
+            #frame = cv2.resize(frame, (width, resized_height))
+            #frame = cv2.flip(frame,1)
+            #frame = cv2.flip(frame,0)
             #frame = rev_cam(frame)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # slice the lower part of a frame
-            res = frame[resized_height - height:, :]
+            frame = frame[resized_height - height:, :]
 
             # cv2.imshow("frame", res)
             # cv2.waitKey(1)
-            frame = np.array(res, dtype=np.float32)
+            frame = np.array(frame, dtype=np.float32)
             value = prediction.eval(feed_dict={tf_X: np.reshape(frame, [-1, height, width, channel])})
             print('img_out:', value)
             now_time = time.time()  # 更新当前时间
@@ -249,7 +286,7 @@ def auto_pilot():
         robot.movement.move_forward(speed=25, times=500)
         robot.movement.hit()
         robot.movement.move_forward(speed=25, times=1800)
-        back()
+        #back()
 
 
 if __name__ == '__main__':
