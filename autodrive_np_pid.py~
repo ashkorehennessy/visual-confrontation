@@ -59,10 +59,10 @@ def auto_pilot():
     back_cam.set(3, 160)
     back_cam.set(4, 120)
 
-    pid0L = PID(Kp=1, Kd=0, outmax=400, outmin=-400)
+    pid0L = PID(Kp=1, Ki=0.011, Kd=0, outmax=400, outmin=-400)
     pid0R = PID(Kp=1, Kd=0.1, outmax=400, outmin=-400)
     pid1 = PID(Kp=2, Kd=0.1, outmax=400, outmin=-400)
-    pid2 = PID(Kp=0.13, Kd=0.2, outmax=200, outmin=-200)
+    pid2 = PID(Kp=0.15, Kd=0.2, outmax=200, outmin=-200)
     robot = robotPi()
 
    
@@ -91,7 +91,7 @@ def auto_pilot():
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         #cv2.imshow("gray", gray)
         # 二值化
-        ret, binary = cv2.threshold(gray, 130, 255, cv2.THRESH_BINARY)
+        ret, binary = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
         #cv2.imshow("binary", binary)
         # 转换为二维数组
         binary = np.array(binary, dtype=np.uint8)

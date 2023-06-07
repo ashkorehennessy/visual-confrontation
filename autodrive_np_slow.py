@@ -54,7 +54,7 @@ def auto_pilot():
     # set front_cam resolution to 160*120
     front_cam.set(3, 160)
     front_cam.set(4, 120)
-    back_cam = cv2.VideoCapture('/dev/video3')
+    back_cam = cv2.VideoCapture('/dev/video2')
     # set back_cam resolution to 160*120
     back_cam.set(3, 160)
     back_cam.set(4, 120)
