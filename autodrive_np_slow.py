@@ -288,7 +288,7 @@ def auto_pilot():
         #     print("forward")
     
     robot.movement.prepare()
-    robot.movement.move_forward(speed=25, times=600)
+    robot.movement.move_forward(speed=25, times=800)
     time.sleep(1)
     now_time = time.time()
     # 打靶
@@ -324,13 +324,15 @@ def auto_pilot():
 
         else :
             left_ratio = 3600 / left_count
-            if left_ratio < 6:
-                robot.movement.left_ward(angle=95,speed=15, turn=0, times=80)
+            if left_ratio < 22:
+                robot.movement.left_ward(angle=95,speed=15, turn=20, times=80)
                 adj = True
         # 输出信息
         print(left_count,left_ratio)
     robot.movement.hit()
-    robot.movement.move_forward(speed=25, times=550)
+    time.sleep(0.1)
+    robot.movement.draw()
+    robot.movement.move_forward(speed=25, times=500)
 
 
     #time.sleep(0.1)

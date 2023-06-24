@@ -68,16 +68,17 @@ def auto_pilot():
         _, frame = front_cam.read()
         # 计算缩放比例
         #frame = cv2.resize(frame, (width, resized_height))
-        frame = frame[25:70, :]
+        frame = frame[75:, :]
         #frame = cv2.flip(frame,1)
         #frame = cv2.flip(frame,0)
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         #cv2.imshow("gray", gray)
         # 二值化
-        ret, binary = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY)
-        kernel = np.ones((5,5),np.uint8)
-        binary = cv2.morphologyEx(binary,cv2.MORPH_CLOSE,kernel)
+        otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[0]
+        ret, binary = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
+        #kernel = np.ones((5,5),np.uint8)
+        #binary = cv2.morphologyEx(binary,cv2.MORPH_CLOSE,kernel)
         cv2.imshow("binary", binary)
         # 转换为二维数组
         binary = np.array(binary, dtype=np.uint8)

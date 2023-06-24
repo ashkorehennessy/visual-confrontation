@@ -121,6 +121,14 @@ class Movement:
             return True
         return False
 
+    def draw(self):
+        if self.isOpen:
+            command = self.cmd.draw()
+            self.action.write_serial(command)
+            #time.sleep(3)
+            return True
+        return False
+
     def left_ward(self, angle=0, speed=5, turn=150, times=500):
         if self.isOpen:
             command = self.cmd.Command(angle, speed, turn, times)

@@ -28,7 +28,6 @@ import cv2
 import sys
 import os
 import subprocess
-import multiprocessing
 from rev_cam import rev_cam
 from pid import PID
 #subprocess.check_call("v4l2-ctl -d /dev/video2 -c contrast=55 -c saturation=0 -c sharpness=5", shell=True)
@@ -48,43 +47,56 @@ resized_height = int(width * 0.75)
 
 temp_image = np.zeros(width * height * channel, 'uint8')
 
-def auto_pilot(image):
+def auto_pilot():
     # a = np.array(frame, dtype=np.float32)
     # _, prediction = model.predict(a.reshape(1, width * height))
-    # front_cam = cv2.VideoCapture('/dev/video0')
+    front_cam = cv2.VideoCapture('/dev/video0')
     # set front_cam resolution to 160*120
-    # front_cam.set(3, 160)
-    # front_cam.set(4, 120)
-    # back_cam = cv2.VideoCapture('/dev/video2')
+    front_cam.set(3, 160)
+    front_cam.set(4, 120)
+    back_cam = cv2.VideoCapture('/dev/video2')
     # set back_cam resolution to 160*120
-    # back_cam.set(3, 160)
-    # back_cam.set(4, 120)
+    back_cam.set(3, 160)
+    back_cam.set(4, 120)
 
-    pid0 = PID(Kp=0.5, Kd=0, outmax=400, outmin=-400)
+    pid0 = PID(Kp=1, Kd=0, outmax=400, outmin=-400)
     pid1 = PID(Kp=2, Kd=0.1, outmax=400, outmin=-400)
     pid2 = PID(Kp=0.15, Kd=0.22, outmax=200, outmin=-200)
     robot = robotPi()
 
    
     start_time = time.time()  # 开始时间
+    obszone_time = 11  # 越过障碍区的时间
     now_time = start_time  # 当前时间
     enter_stop_zone = False  # 是否进入停止区
     banner_adjust = False  # 是否调整靶子
     stop_count = 0
     flag = 0
-    flagr = False
     time_offset = 0.0
-    thr = 120
-    adj = 0
+    last_thr = 100
+    thr_count = 0
+    thr_sum = 0
+    adj = False
     robot.movement.reset()
+
+    while True:
+        _, frame = front_cam.read()
+        if sys.stdin.read(1) == ' ':
+            break
     start_time = time.time()
-    while adj < 40:
-        frame = image.value
+    while adj != 2:
+        _, frame = front_cam.read()
         # 计算缩放比例
         #frame = cv2.resize(frame, (width, resized_height))
-        frame = frame[75:, :]
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        thr = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[0]
+        thr = max(40,thr)
+        thr = (last_thr + thr) / 2
+        last_thr = thr
+        thr_sum += thr
+        thr_count += 1
+        gray = gray[75:, :]
         #cv2.imshow("gray", gray)
         # 二值化
 
@@ -104,33 +116,27 @@ def auto_pilot(image):
         # 输出信息
         print("P0:left_count:" + str(left_count) + " right_count:" + str(right_count) + " diff:" + str(diff) + " result:",end=" ")
         pid_output = pid0.update(diff, 0)
-        spd = int(50 - (abs(diff) / 50)) 
-        ang = int(-diff/15)
-        if ang < 0:
-            ang = max(-30, ang)
-            ang = 360 + ang
-            flagr = True
-        else:
-            ang = min(30, ang)
+        robot.movement.left_ward(speed=0, turn=-pid_output, times=150)
+        print("pid_output"+str(pid_output))
         if abs(diff) < 30:
-            if flagr is False:
-                pid_output = -100
-                spd = 50
-            else:
-                spd = 50
-                adj += 40
-        robot.movement.left_ward(angle=ang, speed=spd, turn=-pid_output, times=150)
-        print(pid_output,spd,ang)
-        if abs(diff) < 200:
             adj += 1
+    robot.movement.left_ward(angle=20, speed=40, times=200)
     time_offset = time.time() - start_time
+    time.sleep(0.1)
     # 未通过障碍区
     while now_time - start_time < 3.8 + time_offset: 
-        frame = image.value
+        _, frame = front_cam.read()
         # 计算缩放比例
         #frame = cv2.resize(frame, (width, resized_height))
-        frame = frame[55:100, :]
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        thr = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[0]
+        thr = max(40,thr)
+        thr = (last_thr + thr) / 2
+        last_thr = thr
+        thr_sum += thr
+        thr_count += 1
+        gray = gray[55:100, :]
+
         #cv2.imshow("gray", gray)
         # 二值化 
         ret, binary = cv2.threshold(gray, thr, 1, cv2.THRESH_BINARY)
@@ -154,20 +160,26 @@ def auto_pilot(image):
 
 
         # 进入障碍区
-    while now_time - start_time < 5.8 + time_offset: 
-        frame = image.value
+    while now_time - start_time < 6.0 + time_offset: 
+        _, frame = front_cam.read()
         # 计算缩放比例
         #frame = cv2.resize(frame, (width, resized_height))
-        if now_time - start_time < 4.6 + time_offset:
-            frame = frame[55:100, :]
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) 
+        thr = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[0]
+        thr = max(40,thr)
+        thr = (last_thr + thr) / 2
+        last_thr = thr
+        thr_sum += thr
+        thr_count += 1
+        if now_time - start_time < 4.9 + time_offset:
+            gray = gray[55:100, :]
             print("--",end=" ")
         else:
-            frame = frame[45:90, :]
+            gray = gray[45:90, :]
             print("++",end=" ")
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) 
         #cv2.imshow("gray", gray)
         # 二值化
-        ret, binary = cv2.threshold(gray, thr*0.9, 1, cv2.THRESH_BINARY)
+        ret, binary = cv2.threshold(gray, thr, 1, cv2.THRESH_BINARY)
         kernel = np.ones((7,7),np.uint8)
         binary = cv2.morphologyEx(binary,cv2.MORPH_CLOSE,kernel)
         #cv2.imshow("binary", binary)
@@ -189,15 +201,22 @@ def auto_pilot(image):
         now_time = time.time()
     # 通过障碍区
     robot.movement.prepare()
-    while time.time() - start_time < 7.5 + time_offset:
-        frame = image.value
+    while time.time() - start_time < 7.6 + time_offset:
+        _, frame = front_cam.read()
         # 计算缩放比例
         #frame = cv2.resize(frame, (width, resized_height))
-        frame = frame[25:70, :]
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        thr = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[0]
+        thr = max(40,thr)
+        thr = (last_thr + thr) / 2
+        last_thr = thr
+        thr_sum += thr
+        thr_count += 1
+
+        gray = gray[25:70, :]
         #cv2.imshow("gray", gray)
         # 二值
-        ret, binary = cv2.threshold(gray, thr*0.83, 1, cv2.THRESH_BINARY)
+        ret, binary = cv2.threshold(gray, thr, 1, cv2.THRESH_BINARY)
         kernel = np.ones((5,5),np.uint8)
         binary = cv2.morphologyEx(binary,cv2.MORPH_CLOSE,kernel)
         #cv2.imshow("binary", binary)
@@ -214,23 +233,28 @@ def auto_pilot(image):
         diff = left_count - right_count
         # 输出信息
         print("left_count:" + str(left_count) + " right_count:" + str(right_count) + " diff:" + str(diff) + " result:",end=" ")
-        pid_output = pid2.update(left_count,2600)
+        pid_output = pid2.update(left_count,2300)
         print("pid_output: ",pid_output)
         robot.movement.left_ward(angle=0,speed=150,turn=-pid_output,times=200)
         #cv2.waitKey(1)
 
-    robot.movement.draw()
+    robot.movement.hit()
     # 来到停止区
-    down_count = 0
     while enter_stop_zone is False:
-        frame = image.value
+        _, frame = front_cam.read()
         # 计算缩放比例
         #frame = cv2.resize(frame, (width, resized_height))
-        frame = frame[75:, :]
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        thr = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[0]
+        thr = max(40,thr)
+        thr = (last_thr + thr) / 2
+        last_thr = thr
+        thr_sum += thr
+        thr_count += 1
+        gray = gray[75:, :]
         #cv2.imshow("gray", gray)
         # 二值化
-        ret, binary = cv2.threshold(gray, thr*1.2, 1, cv2.THRESH_BINARY)
+        ret, binary = cv2.threshold(gray, thr, 1, cv2.THRESH_BINARY)
         #cv2.imshow("binary", binary)
         # 转换为二维数组
         binary = np.array(binary, dtype=np.uint8)
@@ -251,40 +275,28 @@ def auto_pilot(image):
         down_ratio = 3680 / down_count
         # 输出信息
         print(left_count,right_count,up_count,down_count,up_ratio,down_ratio)
-        if up_count < 2000 and down_count < 2000:
+        if up_count < 3000:
             enter_stop_zone = True
-        robot.movement.move_forward(speed=100, times=120)
-    down_count = (down_count + 250) / 1.25
-    timectl = int((600 + down_count) / 10)
-    robot.movement.move_forward(speed=40, times=timectl)
-    time.sleep(timectl / 1000)
-    print("timectl ms:", timectl)
-    print("total time:", time.time() - start_time)
-    
+        robot.movement.move_forward(speed=40, times=120)
+        #cv2.waitKey(1)
+    robot.movement.draw()
+    #robot.movement.move_forward(speed=40, times=220)
+    #time.sleep(0.22)
 
-def videocap(image):
-    front_cam = cv2.VideoCapture('/dev/video0')
-    # set front_cam resolution to 160*120
-    front_cam.set(3, 160)
-    front_cam.set(4, 120)
-    frames = 0
-    while not stop_event.is_set():
-        ret, image.value = front_cam.read()
-        frames += 1
-    print("total frame:",frames)
+    print("total:", time.time() - start_time)
+    print(thr_sum / thr_count)
 
+    #back()
 
 
 if __name__ == '__main__':
-    image = multiprocessing.Manager().Value(cv2.CV_8UC3, None)
-    stop_event = multiprocessing.Event()
-    proc1 = multiprocessing.Process(target=videocap, args=(image,))
-    proc2 = multiprocessing.Process(target=auto_pilot, args=(image,))
-    proc1.start()
-    while True:
-        if sys.stdin.read(1) == ' ':
-            break
-    proc2.start()
-    proc2.join()
-    stop_event.set()
-    proc1.join()
+
+    ###############################################################
+    # startTime=datetime.datetime.now()
+    ###############################################################
+    auto_pilot()
+    # time.sleep(0.5)
+    ##############################################################
+    # endTime=datetime.datetime.now()
+    # print(endTime-startTime)
+    ###############################################################
