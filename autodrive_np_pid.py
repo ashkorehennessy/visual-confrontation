@@ -88,8 +88,10 @@ def auto_pilot(image):
         #cv2.imshow("gray", gray)
         # 二值化
 
-        ret, binary = cv2.threshold(gray, thr, 1, cv2.THRESH_BINARY)
+        ret, binary = cv2.threshold(gray, thr, 255, cv2.THRESH_BINARY)
         #cv2.imshow("binary", binary)
+        binary[binary != 0] = 1
+        cv2.waitKey(1)
         # 转换为二维数组
         binary = np.array(binary, dtype=np.uint8)
         # 非0元素转换为1
@@ -119,11 +121,14 @@ def auto_pilot(image):
             else:
                 spd = 50
                 adj += 40
-        robot.movement.left_ward(angle=ang, speed=spd, turn=-pid_output, times=150)
+        robot.movement.left_ward(angle=ang, speed=spd, turn=-pid_output, times=150) 
+        #robot.movement.left_ward(angle=ang, speed=0, turn=0, times=150)
         print(pid_output,spd,ang)
         if abs(diff) < 200:
             adj += 1
-    time_offset = time.time() - start_time
+        time_offset = time.time() - start_time
+        if time_offset < 0.27:
+            time_offset = 0.1
     # 未通过障碍区
     while now_time - start_time < 3.8 + time_offset: 
         frame = image.value
@@ -133,8 +138,10 @@ def auto_pilot(image):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         #cv2.imshow("gray", gray)
         # 二值化 
-        ret, binary = cv2.threshold(gray, thr, 1, cv2.THRESH_BINARY)
+        ret, binary = cv2.threshold(gray, thr, 255, cv2.THRESH_BINARY)
         #cv2.imshow("binary", binary)
+        binary[binary != 0] = 1
+        cv2.waitKey(1)
         # 转换为二维数组
         binary = np.array(binary, dtype=np.uint8)
         # 分割成左右两部分
@@ -152,13 +159,12 @@ def auto_pilot(image):
         print("pid_output",pid_output)
         now_time = time.time()
 
-
         # 进入障碍区
     while now_time - start_time < 5.8 + time_offset: 
         frame = image.value
         # 计算缩放比例
         #frame = cv2.resize(frame, (width, resized_height))
-        if now_time - start_time < 4.6 + time_offset:
+        if now_time - start_time < 4.5 + time_offset:
             frame = frame[55:100, :]
             print("--",end=" ")
         else:
@@ -167,10 +173,12 @@ def auto_pilot(image):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) 
         #cv2.imshow("gray", gray)
         # 二值化
-        ret, binary = cv2.threshold(gray, thr*0.9, 1, cv2.THRESH_BINARY)
+        ret, binary = cv2.threshold(gray, thr*0.9, 255, cv2.THRESH_BINARY)
         kernel = np.ones((7,7),np.uint8)
         binary = cv2.morphologyEx(binary,cv2.MORPH_CLOSE,kernel)
         #cv2.imshow("binary", binary)
+        binary[binary != 0] = 1
+        cv2.waitKey(1)
         # 转换为二维数组
         binary = np.array(binary, dtype=np.uint8)
         # 分割成左右两部分
@@ -189,7 +197,7 @@ def auto_pilot(image):
         now_time = time.time()
     # 通过障碍区
     robot.movement.prepare()
-    while time.time() - start_time < 7.5 + time_offset:
+    while time.time() - start_time < 7.4 + time_offset:
         frame = image.value
         # 计算缩放比例
         #frame = cv2.resize(frame, (width, resized_height))
@@ -197,10 +205,12 @@ def auto_pilot(image):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         #cv2.imshow("gray", gray)
         # 二值
-        ret, binary = cv2.threshold(gray, thr*0.83, 1, cv2.THRESH_BINARY)
+        ret, binary = cv2.threshold(gray, thr*0.83, 255, cv2.THRESH_BINARY)
         kernel = np.ones((5,5),np.uint8)
         binary = cv2.morphologyEx(binary,cv2.MORPH_CLOSE,kernel)
         #cv2.imshow("binary", binary)
+        binary[binary != 0] = 1
+        cv2.waitKey(1)
         # 转换为二维数组
         binary = np.array(binary, dtype=np.uint8)
         # 非0元素转换为1
@@ -217,7 +227,6 @@ def auto_pilot(image):
         pid_output = pid2.update(left_count,2600)
         print("pid_output: ",pid_output)
         robot.movement.left_ward(angle=0,speed=150,turn=-pid_output,times=200)
-        #cv2.waitKey(1)
 
     robot.movement.draw()
     # 来到停止区
@@ -230,8 +239,10 @@ def auto_pilot(image):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         #cv2.imshow("gray", gray)
         # 二值化
-        ret, binary = cv2.threshold(gray, thr*1.2, 1, cv2.THRESH_BINARY)
+        ret, binary = cv2.threshold(gray, thr*1.2, 255, cv2.THRESH_BINARY)
         #cv2.imshow("binary", binary)
+        binary[binary != 0] = 1
+        cv2.waitKey(1)
         # 转换为二维数组
         binary = np.array(binary, dtype=np.uint8)
         # 分割成上下左右四部分
@@ -260,27 +271,32 @@ def auto_pilot(image):
     time.sleep(timectl / 1000)
     print("timectl ms:", timectl)
     print("total time:", time.time() - start_time)
+    print("time offset:", time_offset)
     
 
-def videocap(image):
+def videocap(image,video_ok):
     front_cam = cv2.VideoCapture('/dev/video0')
     # set front_cam resolution to 160*120
     front_cam.set(3, 160)
     front_cam.set(4, 120)
+    video_ok.value, image.value = front_cam.read()
     frames = 0
-    while not stop_event.is_set():
+    while True:
         ret, image.value = front_cam.read()
-        frames += 1
-    print("total frame:",frames)
 
 
 
 if __name__ == '__main__':
     image = multiprocessing.Manager().Value(cv2.CV_8UC3, None)
+    video_ok = multiprocessing.Manager().Value('i', 0)
     stop_event = multiprocessing.Event()
-    proc1 = multiprocessing.Process(target=videocap, args=(image,))
+    proc1 = multiprocessing.Process(target=videocap, args=(image,video_ok))
     proc2 = multiprocessing.Process(target=auto_pilot, args=(image,))
     proc1.start()
+    print("wait for video ok")
+    while video_ok.value == 0:
+        time.sleep(0.1)
+    print("video ok")
     while True:
         if sys.stdin.read(1) == ' ':
             break
