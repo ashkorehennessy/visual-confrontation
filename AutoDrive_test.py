@@ -76,7 +76,7 @@ def auto_pilot():
         #cv2.imshow("gray", gray)
         # 二值化
         otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[0]
-        ret, binary = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
+        ret, binary = cv2.threshold(gray, 135, 255, cv2.THRESH_BINARY)
         #kernel = np.ones((5,5),np.uint8)
         #binary = cv2.morphologyEx(binary,cv2.MORPH_CLOSE,kernel)
         cv2.imshow("binary", binary)
