@@ -115,7 +115,7 @@ def auto_pilot():
         diff = left_count - right_count
         # 输出信息
         print("P0:left_count:" + str(left_count) + " right_count:" + str(right_count) + " diff:" + str(diff) + " result:",end=" ")
-        pid_output = pid0.update(diff, 0)
+        pid_output = pid0.Calc(diff, 0)
         robot.movement.left_ward(speed=0, turn=-pid_output, times=150)
         print("pid_output"+str(pid_output))
         if abs(diff) < 30:
@@ -153,7 +153,7 @@ def auto_pilot():
         diff = left_count - right_count
         # 输出信息
         print("P1:left_count:" + str(left_count) + " right_count:" + str(right_count) + " diff:" + str(diff) + " result:",end=" ")
-        pid_output = pid1.update(diff, 0)
+        pid_output = pid1.Calc(diff, 0)
         robot.movement.left_ward(speed=150, turn=-pid_output, times=200)
         print("pid_output",pid_output)
         now_time = time.time()
@@ -195,7 +195,7 @@ def auto_pilot():
         diff = left_count - right_count
         # 输出信息
         print("P2:left_count:" + str(left_count) + " right_count:" + str(right_count) + " diff:" + str(diff) + " result:",end=" ")
-        pid_output = pid1.update(diff, 0)
+        pid_output = pid1.Calc(diff, 0)
         robot.movement.left_ward(speed=150, turn=-pid_output, times=200)
         print("pid_output",pid_output)
         now_time = time.time()
@@ -233,7 +233,7 @@ def auto_pilot():
         diff = left_count - right_count
         # 输出信息
         print("left_count:" + str(left_count) + " right_count:" + str(right_count) + " diff:" + str(diff) + " result:",end=" ")
-        pid_output = pid2.update(left_count,2300)
+        pid_output = pid2.Calc(left_count, 2300)
         print("pid_output: ",pid_output)
         robot.movement.left_ward(angle=0,speed=150,turn=-pid_output,times=200)
         #cv2.waitKey(1)

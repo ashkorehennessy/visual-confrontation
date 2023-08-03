@@ -136,6 +136,13 @@ class Movement:
             return True
         return False
 
+    def any_ward(self, angle=0, speed=0, turn=0, times=500):
+        if self.isOpen:
+            command = self.cmd.Command(angle, speed, turn, times)
+            self.action.write_serial(command)
+            return True
+        return False
+
     def right_ward(self, angle=0, speed=5, turn=-150, times=500):
         if self.isOpen:
             command = self.cmd.Command(angle, speed, turn, times)

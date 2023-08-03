@@ -224,7 +224,7 @@ def auto_pilot():
         diff = left_count - right_count
         # 输出信息
         print("left_count:" + str(left_count) + " right_count:" + str(right_count) + " diff:" + str(diff) + " result:",end=" ")
-        pid_output = spd_pid.update(left_count,2800)
+        pid_output = spd_pid.Calc(left_count, 2800)
         print("pid_output: ",pid_output)
         robot.movement.left_ward(angle=0,speed=150,turn=-pid_output,times=200)
 

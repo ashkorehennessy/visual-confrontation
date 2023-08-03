@@ -77,7 +77,7 @@ def auto_pilot(image):
     flag4 = False
     flag4et = False
     first_diff = 114514
-    time_offset = 0.0
+    frame_count = 0
     thr = 120
     adj = 0
     last_image = None
@@ -112,10 +112,10 @@ def auto_pilot(image):
             first_diff = diff
         # 输出信息
         print("P0:left_count:" + str(left_count) + " right_count:" + str(right_count) + " diff:" + str(diff) + " result:",end=" ")
-        pid_output = pid0.update(diff, 0)
+        pid_output = pid0.Calc(diff, 0)
         if pid_output > 300:
             flagl = True
-        spd = int(50 - (abs(diff) / 50)) 
+        spd = int(50 - (abs(diff) / 50))
         ang = int(-diff/15)
         if ang < 0:
             ang = max(-30, ang)
@@ -155,6 +155,7 @@ def auto_pilot(image):
         frame = image.value
         if (image.value == last_image).all():
             continue
+        frame_count += 1
         last_image = image.value
         # 计算缩放比例
         #frame = cv2.resize(frame, (width, resized_height))
@@ -183,7 +184,7 @@ def auto_pilot(image):
                 flag4 = True
         # 输出信息
         print("P1:left_count:" + str(left_count) + " right_count:" + str(right_count) + " diff:" + str(diff) + " result:",end=" ")
-        pid_output = pid1.update(diff, 0)
+        pid_output = pid1.Calc(diff, 0)
         robot.movement.left_ward(speed=150, turn=-pid_output, times=200)
         print("pid_output",pid_output)
         now_time = time.time()
@@ -193,6 +194,7 @@ def auto_pilot(image):
         frame = image.value
         if (image.value == last_image).all():
             continue
+        frame_count += 1
         last_image = image.value
         # 计算缩放比例
         #frame = cv2.resize(frame, (width, resized_height))
@@ -223,7 +225,7 @@ def auto_pilot(image):
         diff = left_count - right_count
         # 输出信息
         print("P2:left_count:" + str(left_count) + " right_count:" + str(right_count) + " diff:" + str(diff) + " result:",end=" ")
-        pid_output = pid1.update(diff, 0)
+        pid_output = pid1.Calc(diff, 0)
         robot.movement.left_ward(speed=150, turn=-pid_output, times=200)
         print("pid_output",pid_output)
         now_time = time.time()
@@ -233,6 +235,7 @@ def auto_pilot(image):
         frame = image.value
         if (image.value == last_image).all():
             continue
+        frame_count += 1
         last_image = image.value
         # 计算缩放比例
         #frame = cv2.resize(frame, (width, resized_height))
@@ -259,7 +262,7 @@ def auto_pilot(image):
         diff = left_count - right_count
         # 输出信息
         print("left_count:" + str(left_count) + " right_count:" + str(right_count) + " diff:" + str(diff) + " result:",end=" ")
-        pid_output = pid2.update(left_count,2400)
+        pid_output = pid2.Calc(left_count, 2400)
         print("pid_output: ",pid_output)
         robot.movement.left_ward(angle=0,speed=150,turn=-pid_output,times=200)
 
@@ -270,6 +273,7 @@ def auto_pilot(image):
         frame = image.value
         if (image.value == last_image).all():
             continue
+        frame_count += 1
         last_image = image.value
         # 计算缩放比例
         #frame = cv2.resize(frame, (width, resized_height))
@@ -309,6 +313,7 @@ def auto_pilot(image):
     print("time offset:", time_offset)
     print("orig time offset:", orig_time_offset)
     print("flag4 stat:", flag4)
+    print("fps:", frame_count / (time.time() - start_time))
     
 
 def videocap(image,video_ok):
