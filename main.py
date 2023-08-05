@@ -214,6 +214,8 @@ def autopilot(image, video_ok):
     print("part1 time: ", part1_time)
     print("first diff: ", first_diff)
     print("time offset: ", time_offset)
+    mynparr.record_save = True
+    mynparr.process(image.value)
 
 
 if __name__ == '__main__':

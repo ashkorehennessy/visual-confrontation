@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import datetime
 
 
 class Mynparr:
@@ -18,13 +19,26 @@ class Mynparr:
         self.up_white_pixel = 0
         self.down_white_pixel = 0
         self.diff = 0
+        self.record = []
+        self.record_bin = []
+        self.record_save = False
 
     def process(self, image):
         frame = image[self.crop_top:self.crop_bottom, :]  # crop
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # convert to grayscale
+        # append to record
+        self.record.append(frame)
         ret, frame = cv2.threshold(frame, self.threshold, 1, cv2.THRESH_BINARY)  # threshold
         if self.morphology is True:
             frame = cv2.morphologyEx(frame, cv2.MORPH_CLOSE, np.ones(self.ksize, np.uint8))  # morphology close
+        # append to record binary
+        self.record_bin.append(frame)
+        # save record npy with timestamp
+        if self.record_save is True:
+            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+            np.save('record/record_' + timestamp + '.npy', self.record)
+            np.save('record/record_' + timestamp + '_bin.npy', self.record_bin)
+            print('record saved')
         if self.show is True:
             cv2.imshow('frame', frame * 255)
             cv2.waitKey(1)
