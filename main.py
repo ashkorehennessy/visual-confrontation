@@ -4,37 +4,39 @@ import time
 import sys
 import signal
 import subprocess
+import numpy as np
 from robotPi import robotPi
 from pid import PID
 from mynparr import Mynparr
 
 
-def signal_handler(signal, frame):
+def signal_handler(handler_signal, handler_frame):
+    # SIGINT handler
     robot = robotPi()
     robot.movement.reset()
     exit(0)
 
 
-def videocap(image, image_ok):
+def videocap(videocap_image, videocap_image_ok):
     # subprocess.check_call("v4l2-ctl -d /dev/video0 -c contrast=55 -c saturation=0 -c sharpness=5", shell=True)
     video = cv2.VideoCapture('/dev/video0')
     # set camera resolution
     video.set(3, 160)
     video.set(4, 120)
-    ret, image.value = video.read()
+    ret, videocap_image.value = video.read()
     # if video is not opened, raise error
     if not ret:
         raise Exception("video error")
     # let camera be steady
     for _ in range(10):
         video.read()
-    print("video steady")
+    print("video ok")
     # start video capture
     while True:
-        image_ok.value, image.value = video.read()
+        videocap_image_ok.value, videocap_image.value = video.read()
 
 
-def autopilot(image, video_ok):
+def autopilot(autopilot_image, autopilot_video_ok):
     robot = robotPi()
     mynparr = Mynparr()
 
@@ -46,6 +48,7 @@ def autopilot(image, video_ok):
     part = 1
     start_toward = 0
     start_ready = 0
+    process_frame = True
 
     # time and counter
     start_time = time.time()
@@ -85,7 +88,7 @@ def autopilot(image, video_ok):
                 else:
                     start_toward = 2
             elif -150 <= first_diff <= 150:
-                mynparr.process(image.value)
+                mynparr.process(autopilot_image.value)
                 if mynparr.diff < -150:
                     start_toward = 3
                 else:
@@ -138,6 +141,7 @@ def autopilot(image, video_ok):
 
     def part5():
         """part5: before end line"""
+        nonlocal process_frame
         pid_output = end_pid.Calc(mynparr.left_white_pixel, 2450)
         robot.movement.any_ward(speed=150, turn=-pid_output, times=200)
         if now_time - start_time > 7.4 + time_offset:
@@ -146,17 +150,22 @@ def autopilot(image, video_ok):
             mynparr.threshold = 135
             robot.movement.draw()
             mynparr.morphology = False
+            process_frame = False
             print("part5 finished")
             return 6
         return 5
 
-    def part6():
+    def part6(_frame):
         """part6: end line"""
-        robot.movement.any_ward(speed=30, times=200)
-        if mynparr.down_white_pixel < 2400:
-            robot.movement.move_forward(speed=50, times=360)
-            print("part6 finished")
-            return 7
+        robot.movement.move_forward(speed=150, times=200)
+        _frame = _frame[mynparr.crop_top:mynparr.crop_bottom, :]
+        _, binary = cv2.threshold(_frame, mynparr.threshold, 1, cv2.THRESH_BINARY)
+        for i in range(15, 0, -1):
+            if np.sum(binary[(i - 1) * 3: i * 3, :]) < 400:
+                robot.movement.move_forward(speed=50, times=250-i*10)
+                print("part6 finished")
+                print("end delay: ", 250-i*10)
+                return 7
         return 6
 
     # part functions
@@ -185,27 +194,39 @@ def autopilot(image, video_ok):
     # the crop area of part 1
     mynparr.crop_top = 75
     mynparr.crop_bottom = 120
-    mynparr.process(image.value)
+    mynparr.process(autopilot_image.value)
     first_diff = mynparr.diff
 
     while part < 7:
         # check if new frame is ready
-        if video_ok.value == 1:
-            frame = image.value
-            video_ok.value = 0
+        if autopilot_video_ok.value == 1:
+            frame = autopilot_image.value
+            autopilot_video_ok.value = 0
         else:
-            continue
+            # use blank image instead
+            frame = np.zeros((160, 120, 3), np.uint8)
+            # reconnect to camera
+            print("reconnect to camera")
+            subprocess.check_call("sudo modprobe -r uvcvideo", shell=True)
+            time.sleep(0.2)
+            subprocess.check_call("sudo modprobe uvcvideo", shell=True)
+            time.sleep(0.05)
+            time_offset += 0.25
 
         # process frame
-        mynparr.process(frame)
-        frame_count += 1
+        if process_frame:
+            mynparr.process(frame)
+            frame_count += 1
 
         # update now time
         now_time = time.time()
 
         # run part
         part_function = part_functions.get(part)
-        part = part_function()
+        if process_frame:
+            part = part_function()
+        else:
+            part = part_function(frame)
 
     # print info
     print("total time: ", now_time - start_time)
@@ -215,7 +236,7 @@ def autopilot(image, video_ok):
     print("first diff: ", first_diff)
     print("time offset: ", time_offset)
     mynparr.record_save = True
-    mynparr.process(image.value)
+    mynparr.process(autopilot_image.value)
 
 
 if __name__ == '__main__':
@@ -228,7 +249,6 @@ if __name__ == '__main__':
     print("wait for video ok")
     while video_ok.value == 0:
         time.sleep(0.1)
-    print("video ok")
     while True:
         if sys.stdin.read(1) == ' ':
             break
