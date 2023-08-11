@@ -33,7 +33,25 @@ def videocap(videocap_image, videocap_image_ok):
     print("video ok")
     # start video capture
     while True:
-        videocap_image_ok.value, videocap_image.value = video.read()
+        ret, videocap_image.value = video.read()
+        if ret is False:
+            # use blank image instead
+            videocap_image.value = np.zeros((160, 120, 3), np.uint8)
+            # reconnect to camera
+            video.release()
+            time.sleep(0.1)
+            print("reconnect to camera")
+            subprocess.check_call("sudo modprobe -rf uvcvideo", shell=True)
+            time.sleep(0.4)
+            subprocess.check_call("sudo modprobe uvcvideo", shell=True)
+            time.sleep(0.2)
+            video = cv2.VideoCapture('/dev/video0')
+            video.set(3, 160)
+            video.set(4, 120)
+            ret, videocap_image.value = video.read()
+            print("video reconnected")
+        videocap_image_ok.value = ret
+
 
 
 def autopilot(autopilot_image, autopilot_video_ok):
@@ -162,7 +180,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
         _, binary = cv2.threshold(_frame, mynparr.threshold, 1, cv2.THRESH_BINARY)
         for i in range(15, 0, -1):
             if np.sum(binary[(i - 1) * 3: i * 3, :]) < 400:
-                robot.movement.move_forward(speed=50, times=250-i*10)
+                robot.movement.move_forward(speed=50, times=320-i*10)
                 print("part6 finished")
                 print("end delay: ", 250-i*10)
                 return 7
@@ -203,15 +221,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
             frame = autopilot_image.value
             autopilot_video_ok.value = 0
         else:
-            # use blank image instead
-            frame = np.zeros((160, 120, 3), np.uint8)
-            # reconnect to camera
-            print("reconnect to camera")
-            subprocess.check_call("sudo modprobe -r uvcvideo", shell=True)
-            time.sleep(0.2)
-            subprocess.check_call("sudo modprobe uvcvideo", shell=True)
-            time.sleep(0.05)
-            time_offset += 0.25
+            continue
 
         # process frame
         if process_frame:
