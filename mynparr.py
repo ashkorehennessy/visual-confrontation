@@ -21,6 +21,7 @@ class Mynparr:
         self.diff = 0
         self.record = []
         self.record_bin = []
+        self.record_raw = []
         self.record_save = False
 
     def process(self, image):

@@ -62,7 +62,7 @@ def auto_pilot():
     ##robot.movement.prepare()
 
 
-
+    threshold = 120
     # 未通过障碍区
     while now_time - start_time < obszone_time:
         _, frame = front_cam.read()
@@ -76,7 +76,7 @@ def auto_pilot():
         #cv2.imshow("gray", gray)
         # 二值化
         otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[0]
-        ret, binary = cv2.threshold(gray, 135, 255, cv2.THRESH_BINARY)
+        ret, binary = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)
         #kernel = np.ones((5,5),np.uint8)
         #binary = cv2.morphologyEx(binary,cv2.MORPH_CLOSE,kernel)
         cv2.imshow("binary", binary)
@@ -94,19 +94,20 @@ def auto_pilot():
         right_count = np.sum(right == 1)
         up_count = np.sum(up == 1)
         down_count = np.sum(down == 1)
+        sum_count = np.sum(binary == 1)
         # 计算左右两部分的白色像素点个数之差
         diff = left_count - right_count
-        # 计算比例
-        left_ratio = 3600 / left_count
-        right_ratio = 3600 / right_count
-        up_ratio = 3600 / up_count
-        down_ratio = 3600 / down_count
         # 输出信息
         #print("left_count:" + str(left_count) + " right_count:" + str(right_count) + " diff:" + str(diff) + " result:",end=" ")
-        print(left_count,right_count,up_count,down_count,left_ratio,right_ratio,up_ratio,down_ratio)
+        print(left_count,right_count,up_count,down_count,threshold,sum_count)
            #print("forward")
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
             break
+        elif key == ord('='):
+            threshold += 1
+        elif key == ord('-'):
+            threshold -= 1
 
 
 

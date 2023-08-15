@@ -61,7 +61,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
     threshold_p2 = 100
     threshold_p3 = 90  # target: 6100
     threshold_p5 = 86  # target: 2400
-    threshold_p6 = 145  # target: 3260
+    threshold_p6 = 135  # target: 3260
 
     part2_count = 0
 
@@ -128,7 +128,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
         pid_output = start_pid.Calc(mynparr.diff, 0)
         if part2_count < 10:
             if start_toward == 5:
-                robot.movement.any_ward(angle=40, speed=150, turn=-pid_output, times=200)
+                robot.movement.any_ward(angle=10, speed=150, turn=-pid_output, times=200)
             elif start_toward == 6:
                 robot.movement.any_ward(angle=40, speed=150, turn=-pid_output, times=200)
             elif start_toward == 4:
@@ -175,7 +175,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
     def part5():
         """part5: before end line"""
         nonlocal process_frame
-        pid_output = end_pid.Calc(mynparr.left_white_pixel, 2450)
+        pid_output = end_pid.Calc(mynparr.left_white_pixel, 2550)
         robot.movement.any_ward(speed=150, turn=-pid_output, times=200)
         if now_time - start_time > 7.4 + time_offset:
             mynparr.crop_top = 75
@@ -223,17 +223,17 @@ def autopilot(autopilot_image, autopilot_video_ok):
         2: 0.05,
         3: 0.00,
         4: -0.10,
-        5: 0.05,
+        5: 0.15,
         6: 0.20
     }
 
     # end delays for different i
     end_delays = {
-        6: 191,
-        7: 175,
-        8: 161,
-        9: 153,
-        10: 140,
+        6: 160,
+        7: 138,
+        8: 110,
+        9: 100,
+        10: 50,
         11: 110,
         12: 80,
         13: 40,

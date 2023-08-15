@@ -61,7 +61,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
     threshold_p2 = 100
     threshold_p3 = 90  # target: 6100
     threshold_p5 = 86  # target: 2400
-    threshold_p6 = 145  # target: 3260
+    threshold_p6 = 110  # target: 3260
 
     part2_count = 0
 
@@ -130,7 +130,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
             if start_toward == 5:
                 robot.movement.any_ward(angle=40, speed=150, turn=-pid_output, times=200)
             elif start_toward == 6:
-                robot.movement.any_ward(angle=40, speed=150, turn=-pid_output, times=200)
+                robot.movement.any_ward(angle=50, speed=150, turn=-pid_output, times=200)
             elif start_toward == 4:
                 robot.movement.any_ward(angle=20, speed=150, turn=-pid_output, times=200)
             else:
@@ -196,7 +196,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
         _, binary = cv2.threshold(_frame, mynparr.threshold, 1, cv2.THRESH_BINARY)
         for i in range(15, 0, -1):
             summ = np.sum(binary[(i - 1) * 3: i * 3, :])
-            if summ < 290:
+            if summ < 470:
                 print("line detect in:", i, summ, frame_count)
                 if i > 5:
                     end_delay = end_delays[i]
@@ -223,17 +223,17 @@ def autopilot(autopilot_image, autopilot_video_ok):
         2: 0.05,
         3: 0.00,
         4: -0.10,
-        5: 0.05,
-        6: 0.20
+        5: 0.00,
+        6: 0.05
     }
 
     # end delays for different i
     end_delays = {
-        6: 191,
-        7: 175,
-        8: 161,
-        9: 153,
-        10: 140,
+        6: 215,
+        7: 195,
+        8: 189,
+        9: 165,
+        10: 130,
         11: 110,
         12: 80,
         13: 40,
