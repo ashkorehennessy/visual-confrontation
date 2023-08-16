@@ -58,10 +58,12 @@ def autopilot(autopilot_image, autopilot_video_ok):
     mynparr = Mynparr()
 
     threshold_p1 = 140  # target: 3000
-    threshold_p2 = 100
-    threshold_p3 = 90  # target: 6100
+    threshold_p2 = 65
+    threshold_p3 = 70  # target: 6100
     threshold_p5 = 86  # target: 2400
-    threshold_p6 = 110  # target: 3260
+    threshold_p6 = 155  # target: 3260 high: 110 low: 155
+
+    end_delay_offset = -12
 
     part2_count = 0
 
@@ -175,7 +177,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
     def part5():
         """part5: before end line"""
         nonlocal process_frame
-        pid_output = end_pid.Calc(mynparr.left_white_pixel, 2450)
+        pid_output = end_pid.Calc(mynparr.left_white_pixel, 2550)
         robot.movement.any_ward(speed=150, turn=-pid_output, times=200)
         if now_time - start_time > 7.4 + time_offset:
             mynparr.crop_top = 75
@@ -196,10 +198,12 @@ def autopilot(autopilot_image, autopilot_video_ok):
         _, binary = cv2.threshold(_frame, mynparr.threshold, 1, cv2.THRESH_BINARY)
         for i in range(15, 0, -1):
             summ = np.sum(binary[(i - 1) * 3: i * 3, :])
-            if summ < 470:
+            if summ < 310:
                 print("line detect in:", i, summ, frame_count)
                 if i > 5:
                     end_delay = end_delays[i]
+                    if end_delay < 0:
+                        end_delay = 0
                     robot.movement.move_forward(speed=150, times=end_delay)
                     print("part6 finished")
                     print("end delay: ", end_delay, i)
@@ -223,22 +227,22 @@ def autopilot(autopilot_image, autopilot_video_ok):
         2: 0.05,
         3: 0.00,
         4: -0.10,
-        5: 0.00,
-        6: 0.05
+        5: 0.15,
+        6: 0.20
     }
 
     # end delays for different i
     end_delays = {
-        6: 215,
-        7: 195,
-        8: 189,
-        9: 165,
-        10: 130,
-        11: 110,
-        12: 80,
-        13: 40,
-        14: 0,
-        15: 0
+        6: 215 + end_delay_offset,
+        7: 195 + end_delay_offset,
+        8: 189 + end_delay_offset,
+        9: 173 + end_delay_offset,
+        10: 160 + end_delay_offset,
+        11: 140 + end_delay_offset,
+        12: 80 + end_delay_offset,
+        13: 40 + end_delay_offset,
+        14: 0 + end_delay_offset,
+        15: 0 + end_delay_offset
     }
 
     # the action before start

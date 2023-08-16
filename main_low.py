@@ -233,12 +233,12 @@ def autopilot(autopilot_image, autopilot_video_ok):
         7: 138,
         8: 110,
         9: 100,
-        10: 50,
-        11: 110,
-        12: 80,
-        13: 40,
-        14: 0,
-        15: 0
+        10: 90,
+        11: 80,
+        12: 70,
+        13: 60,
+        14: 50,
+        15: 40
     }
 
     # the action before start
