@@ -61,11 +61,12 @@ def autopilot(autopilot_image, autopilot_video_ok):
     threshold_p2 = 65
     threshold_p3 = 70  # target: 6100
     threshold_p5 = 86  # target: 2400
-    threshold_p6 = 155  # target: 3260 high: 110 low: 155
+    threshold_p6 = 110  # target: 3260 high: 110 low: 155
 
-    end_delay_offset = -12
+    target_white_pixel = 2740
 
-    part2_count = 0
+    end_delay_offset = 5
+
 
     # init PID
     start_pid = PID(Kp=2, Kd=0, outmax=400, outmin=-400)
@@ -81,8 +82,10 @@ def autopilot(autopilot_image, autopilot_video_ok):
     start_time = time.time()
     now_time = start_time
     part1_time = 0.0
+    part2_count = 0
     time_offset = 0.0
     frame_count = 0
+    draw_count = 20
 
     def part1():
         """part1: start line"""
@@ -104,7 +107,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
             part1_time = now_time - start_time
             # predict start toward
             if first_diff < -150:
-                if part1_time > 0.35:
+                if part1_time > 0.30:
                     start_toward = 1
                 else:
                     start_toward = 2
@@ -135,6 +138,8 @@ def autopilot(autopilot_image, autopilot_video_ok):
                 robot.movement.any_ward(angle=50, speed=150, turn=-pid_output, times=200)
             elif start_toward == 4:
                 robot.movement.any_ward(angle=20, speed=150, turn=-pid_output, times=200)
+            elif start_toward == 1:
+                robot.movement.any_ward(angle=0, speed=150, turn=-pid_output-200, times=200)
             else:
                 robot.movement.any_ward(speed=150, turn=-pid_output, times=200)
         else:
@@ -142,8 +147,8 @@ def autopilot(autopilot_image, autopilot_video_ok):
         part2_count += 1
         # robot.movement.any_ward(speed=150, turn=-pid_output, times=200)
         if now_time - start_time > 3.9 + time_offset:
-            mynparr.crop_top = 50
-            mynparr.crop_bottom = 95
+            mynparr.crop_top = 55
+            mynparr.crop_bottom = 100
             mynparr.threshold = threshold_p3
             mynparr.morphology = True
             print("part2 finished")
@@ -177,7 +182,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
     def part5():
         """part5: before end line"""
         nonlocal process_frame
-        pid_output = end_pid.Calc(mynparr.left_white_pixel, 2550)
+        pid_output = end_pid.Calc(mynparr.left_white_pixel, target_white_pixel)
         robot.movement.any_ward(speed=150, turn=-pid_output, times=200)
         if now_time - start_time > 7.4 + time_offset:
             mynparr.crop_top = 75
@@ -191,6 +196,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
         return 5
 
     def part6(_frame):
+        nonlocal draw_count
         """part6: end line"""
         robot.movement.move_forward(speed=150, times=200)
         _frame = _frame[mynparr.crop_top:mynparr.crop_bottom, :]
@@ -208,6 +214,9 @@ def autopilot(autopilot_image, autopilot_video_ok):
                     print("part6 finished")
                     print("end delay: ", end_delay, i)
                     return 7
+        draw_count -= 1
+        if draw_count == 0:
+            robot.movement.draw()
         return 6
 
     # part functions
@@ -223,11 +232,11 @@ def autopilot(autopilot_image, autopilot_video_ok):
     # time offset for different start toward
     time_offsets = {
         0: 0.00,
-        1: 0.25,
-        2: 0.05,
+        1: 0.30,
+        2: 0.10,
         3: 0.00,
-        4: -0.10,
-        5: 0.15,
+        4: -0.05,
+        5: 0.10,
         6: 0.20
     }
 
@@ -236,13 +245,13 @@ def autopilot(autopilot_image, autopilot_video_ok):
         6: 215 + end_delay_offset,
         7: 195 + end_delay_offset,
         8: 189 + end_delay_offset,
-        9: 173 + end_delay_offset,
-        10: 160 + end_delay_offset,
+        9: 178 + end_delay_offset,
+        10: 168 + end_delay_offset,
         11: 140 + end_delay_offset,
-        12: 80 + end_delay_offset,
-        13: 40 + end_delay_offset,
-        14: 0 + end_delay_offset,
-        15: 0 + end_delay_offset
+        12: 133 + end_delay_offset,
+        13: 128 + end_delay_offset,
+        14: 120 + end_delay_offset,
+        15: 114 + end_delay_offset
     }
 
     # the action before start

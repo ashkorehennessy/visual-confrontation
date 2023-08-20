@@ -4,7 +4,7 @@ import sys
 record = sys.argv[1] + '.npy'
 record_bin = sys.argv[1] + '_bin.npy'
 size = np.load(record).shape[0]
-for i in range(190, size):
+for i in range(220, size):
     frame = np.load(record)[i]
     frame_bin = np.load(record_bin)[i]
     cv2.imshow('frame', frame)
