@@ -138,7 +138,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
                 robot.movement.any_ward(angle=50, speed=150, turn=-pid_output, times=200)
             elif start_toward == 4:
                 robot.movement.any_ward(angle=20, speed=150, turn=-pid_output, times=200)
-            elif start_toward == 1:
+            elif start_toward == 1 or start_toward == 2:
                 robot.movement.any_ward(angle=0, speed=150, turn=-pid_output-200, times=200)
             else:
                 robot.movement.any_ward(speed=150, turn=-pid_output, times=200)
