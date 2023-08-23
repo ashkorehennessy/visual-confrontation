@@ -91,7 +91,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
     part2_count = 0
     time_offset = 0.0
     frame_count = 0
-    draw_count = 20
+    draw_count = 10
     second_diff = 0
 
     def part1():
@@ -248,7 +248,6 @@ def autopilot(autopilot_image, autopilot_video_ok):
             mynparr.crop_top = 75
             mynparr.crop_bottom = 120
             mynparr.threshold = threshold_p6
-            robot.movement.draw()
             mynparr.morphology = False
             process_frame = False
             print("part5 finished")
@@ -273,6 +272,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
                     robot.movement.move_forward(speed=150, times=end_delay)
                     print("part6 finished")
                     print("end delay: ", end_delay, i)
+                    robot.movement.draw()
                     return 7
         draw_count -= 1
         if draw_count == 0:

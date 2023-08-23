@@ -67,14 +67,20 @@ def autopilot(autopilot_image, autopilot_video_ok):
 
     end_delay_offset = 5
 
-
     # init PID
     start_pid = PID(Kp=2, Kd=0, outmax=400, outmin=-400)
     end_pid = PID(Kp=0.15, Kd=0, outmax=200, outmin=-200)
 
     # flags
     part = 1
-    start_toward = 0
+    flag_specify_start_toward = False
+    if len(sys.argv) == 1:
+        start_toward = 0
+    else:
+        start_toward = int(sys.argv[1])
+        if start_toward == 1:
+            start_toward = 0
+        flag_specify_start_toward = True
     start_ready = 0
     process_frame = True
 
@@ -86,19 +92,29 @@ def autopilot(autopilot_image, autopilot_video_ok):
     time_offset = 0.0
     frame_count = 0
     draw_count = 10
+    second_diff = 0
 
     def part1():
         """part1: start line"""
         nonlocal start_ready
+        nonlocal second_diff
         mynparr.crop_top = 75
         mynparr.crop_bottom = 120
         pid_output = start_pid.Calc(mynparr.diff, 0)
-        robot.movement.left_ward(speed=0, turn=-pid_output, times=200)
-        if -200 < mynparr.diff < 200:
+        robot.movement.any_ward(speed=0, turn=-pid_output, times=200)
+        if first_diff > 200:
+            start_ready = 1
+        if abs(mynparr.diff - first_diff) > 5:
+            if second_diff == 0:
+                second_diff = mynparr.diff
             start_ready += 1
-        if -200 < first_diff < 200:
+        if abs(mynparr.diff - first_diff) > 300:
+            start_ready += 2
+        if -400 < first_diff < 400:
             start_ready += 1
-        if start_ready > 1:
+        if (start_ready > 1) or (now_time - start_time > 0.05):
+            if second_diff == 0:
+                second_diff = mynparr.diff
             mynparr.crop_top = 55
             mynparr.crop_bottom = 100
             nonlocal part1_time
@@ -106,49 +122,93 @@ def autopilot(autopilot_image, autopilot_video_ok):
             nonlocal time_offset
             part1_time = now_time - start_time
             # predict start toward
-            if first_diff < -150:
-                if part1_time > 0.30:
-                    start_toward = 1
+            if first_diff < -350:
+                print("second diff:" + str(second_diff) + "first diff" + str(first_diff))
+                if second_diff - first_diff < 0:
+                    if abs(mynparr.diff) > 20:
+                        if not flag_specify_start_toward:
+                            start_toward = 0
+                    else:
+                        if not flag_specify_start_toward:
+                            start_toward = 1
                 else:
-                    start_toward = 2
-            elif -150 <= first_diff <= 150:
+                    if not flag_specify_start_toward:
+                        start_toward = 2
+            elif -350 <= first_diff <= 350:
+                print("process extra frame")
                 mynparr.process(autopilot_image.value)
+                print("second diff:" + str(second_diff) + "first diff" + str(first_diff))
                 if mynparr.diff < -150:
-                    start_toward = 3
+                    if not flag_specify_start_toward:
+                        start_toward = 3
                 else:
-                    start_toward = 4
-            elif first_diff > 2000:
-                start_toward = 5
-            else:
-                start_toward = 6
+                    if not flag_specify_start_toward:
+                        start_toward = 4
+            elif first_diff > 350:
+                print("second diff:" + str(second_diff) + "first diff" + str(first_diff))
+                if mynparr.diff > 2200:
+                    if not flag_specify_start_toward:
+                        start_toward = 5
+                else:
+                    if not flag_specify_start_toward:
+                        start_toward = 6
             time_offset = time_offsets[start_toward]
             mynparr.threshold = threshold_p2
             print("part1 finished, time: ", part1_time)
+            print("start toward: ", start_toward)
             return 2
         return 1
 
     def part2():
-        nonlocal part2_count
         """part2: before obstacle zone"""
+        nonlocal part2_count
+        nonlocal start_toward
         pid_output = start_pid.Calc(mynparr.diff, 0)
-        if part2_count < 10:
-            if start_toward == 5:
-                robot.movement.any_ward(angle=40, speed=150, turn=-pid_output, times=200)
-            elif start_toward == 6:
-                robot.movement.any_ward(angle=50, speed=150, turn=-pid_output, times=200)
+        if part2_count < 20:
+            if start_toward == 0:
+                if part2_count < 1:
+                    robot.movement.any_ward(angle=0, speed=0, turn=-400, times=200)
+                else:
+                    robot.movement.any_ward(angle=0, speed=150, turn=-pid_output - 230, times=200)
+            elif start_toward == 2:
+                if part2_count < 15:
+                    robot.movement.any_ward(angle=0, speed=150, turn=0, times=200)
+                else:
+                    robot.movement.any_ward(angle=0, speed=150, turn=-pid_output - 230, times=200)
+                    part2_count -= 0.25
+            elif start_toward == 3:
+                # if part2_count < 1:
+                #     robot.movement.any_ward(angle=0, speed=0, turn=-300, times=200)
+                # else:
+                robot.movement.any_ward(angle=0, speed=150, turn=-pid_output - 160, times=200)
             elif start_toward == 4:
-                robot.movement.any_ward(angle=20, speed=150, turn=-pid_output, times=200)
-            elif start_toward == 1 or start_toward == 2:
-                robot.movement.any_ward(angle=0, speed=150, turn=-pid_output-200, times=200)
+                if part2_count < 19:
+                    robot.movement.any_ward(angle=0, speed=150, turn=60, times=200)
+                else:
+                    robot.movement.any_ward(angle=0, speed=150, turn=-pid_output - 230, times=200)
+                    part2_count -= 0.9
+            elif start_toward == 5:
+                if part2_count < 1 and mynparr.right_white_pixel > 3400 and not flag_specify_start_toward:
+                    print("change start_toward to 6")
+                    start_toward = 6
+                    robot.movement.any_ward(angle=0, speed=150, turn=40, times=200)
+                    return 2
+                robot.movement.any_ward(angle=0, speed=150, turn=-pid_output - 160, times=200)
+                part2_count -= 0.2
+            elif start_toward == 6:
+                if part2_count < 18:
+                    robot.movement.any_ward(angle=0, speed=150, turn=40, times=200)
+                else:
+                    robot.movement.any_ward(angle=0, speed=150, turn=-pid_output - 120, times=200)
+                    part2_count -= 0.2
             else:
-                robot.movement.any_ward(speed=150, turn=-pid_output, times=200)
+                robot.movement.any_ward(angle=0, speed=150, turn=-130, times=200)
         else:
             robot.movement.any_ward(speed=150, turn=-pid_output, times=200)
         part2_count += 1
-        # robot.movement.any_ward(speed=150, turn=-pid_output, times=200)
         if now_time - start_time > 3.9 + time_offset:
-            mynparr.crop_top = 55
-            mynparr.crop_bottom = 100
+            mynparr.crop_top = 60
+            mynparr.crop_bottom = 105
             mynparr.threshold = threshold_p3
             mynparr.morphology = True
             print("part2 finished")
@@ -162,6 +222,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
         if now_time - start_time > 4.4 + time_offset:
             mynparr.crop_top = 50
             mynparr.crop_bottom = 95
+            robot.movement.hit()
             print("part3 finished")
             return 4
         return 3
@@ -197,6 +258,9 @@ def autopilot(autopilot_image, autopilot_video_ok):
     def part6(_frame):
         nonlocal draw_count
         """part6: end line"""
+        valid = 0
+        invalid = 0
+        first_i = 0
         robot.movement.move_forward(speed=150, times=200)
         _frame = _frame[mynparr.crop_top:mynparr.crop_bottom, :]
         _frame = cv2.cvtColor(_frame, cv2.COLOR_BGR2GRAY)
@@ -205,19 +269,26 @@ def autopilot(autopilot_image, autopilot_video_ok):
             summ = np.sum(binary[(i - 1) * 3: i * 3, :])
             if summ < 310:
                 print("line detect in:", i, summ, frame_count)
+                valid += 1
                 if i > 5:
-                    end_delay = end_delays[i]
-                    if end_delay < 0:
-                        end_delay = 0
-                    robot.movement.move_forward(speed=150, times=end_delay)
-                    print("part6 finished")
-                    print("end delay: ", end_delay, i)
-                    robot.movement.draw()
-                    return 7
+                    if first_i == 0:
+                        first_i = i
+            else:
+                if valid > 0:
+                    invalid += 1
+        print("valid: ", valid, "invalid: ", invalid)
+        if valid > 5 and invalid < 3:
+            end_delay = end_delays[first_i]
+            if end_delay < 0:
+                end_delay = 0
+            robot.movement.move_forward(speed=150, times=end_delay)
+            print("part6 finished")
+            print("end delay: ", end_delay, first_i)
+            robot.movement.draw()
+            return 7
         draw_count -= 1
         if draw_count == 0:
             print("draw")
-            robot.movement.draw()
         return 6
 
     # part functions
@@ -232,13 +303,13 @@ def autopilot(autopilot_image, autopilot_video_ok):
 
     # time offset for different start toward
     time_offsets = {
-        0: 0.00,
-        1: 0.30,
-        2: 0.10,
-        3: 0.00,
-        4: -0.05,
-        5: 0.10,
-        6: 0.20
+        0: 0.10,
+        1: 0.15,
+        2: -0.15,
+        3: -0.20,
+        4: -0.25,
+        5: -0.10,
+        6: -0.15
     }
 
     # end delays for different i

@@ -162,6 +162,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
         if now_time - start_time > 4.4 + time_offset:
             mynparr.crop_top = 50
             mynparr.crop_bottom = 95
+            robot.movement.hit()
             print("part3 finished")
             return 4
         return 3
@@ -197,6 +198,9 @@ def autopilot(autopilot_image, autopilot_video_ok):
     def part6(_frame):
         nonlocal draw_count
         """part6: end line"""
+        valid = 0
+        invalid = 0
+        first_i = 0
         robot.movement.move_forward(speed=150, times=200)
         _frame = _frame[mynparr.crop_top:mynparr.crop_bottom, :]
         _frame = cv2.cvtColor(_frame, cv2.COLOR_BGR2GRAY)
@@ -205,19 +209,26 @@ def autopilot(autopilot_image, autopilot_video_ok):
             summ = np.sum(binary[(i - 1) * 3: i * 3, :])
             if summ < 310:
                 print("line detect in:", i, summ, frame_count)
+                valid += 1
                 if i > 5:
-                    end_delay = end_delays[i]
-                    if end_delay < 0:
-                        end_delay = 0
-                    robot.movement.move_forward(speed=150, times=end_delay)
-                    print("part6 finished")
-                    print("end delay: ", end_delay, i)
-                    robot.movement.draw()
-                    return 7
+                    if first_i == 0:
+                        first_i = i
+            else:
+                if valid > 0:
+                    invalid += 1
+        print("valid: ", valid, "invalid: ", invalid)
+        if valid > 5 and invalid < 3:
+            end_delay = end_delays[first_i]
+            if end_delay < 0:
+                end_delay = 0
+            robot.movement.move_forward(speed=150, times=end_delay)
+            print("part6 finished")
+            print("end delay: ", end_delay, first_i)
+            robot.movement.draw()
+            return 7
         draw_count -= 1
         if draw_count == 0:
             print("draw")
-            robot.movement.draw()
         return 6
 
     # part functions

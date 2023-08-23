@@ -5,63 +5,21 @@ import sys
 import signal
 import subprocess
 import numpy as np
-from robotPi import robotPi
 from pid import PID
 from mynparr import Mynparr
 
 
-def signal_handler(handler_signal, handler_frame):
-    # SIGINT handler
-    robot = robotPi()
-    robot.movement.reset()
-    exit(0)
 
+def autopilot():
+    video = cv2.VideoCapture("3.mp4")
 
-def videocap(videocap_image, videocap_image_ok):
-    # subprocess.check_call("v4l2-ctl -d /dev/video0 -c contrast=55 -c saturation=0 -c sharpness=5", shell=True)
-    video = cv2.VideoCapture('/dev/video0')
-    # set camera resolution
-    video.set(3, 160)
-    video.set(4, 120)
-    ret, videocap_image.value = video.read()
-    # if video is not opened, raise error
-    if not ret:
-        raise Exception("video error")
-    # let camera be steady
-    for _ in range(10):
-        video.read()
-    print("video ok")
-    # start video capture
-    while True:
-        ret, videocap_image.value = video.read()
-        if ret is False:
-            # use blank image instead
-            videocap_image.value = np.zeros((160, 120, 3), np.uint8)
-            # reconnect to camera
-            video.release()
-            time.sleep(0.1)
-            print("reconnect to camera")
-            subprocess.check_call("sudo modprobe -rf uvcvideo", shell=True)
-            time.sleep(0.4)
-            subprocess.check_call("sudo modprobe uvcvideo", shell=True)
-            time.sleep(0.2)
-            video = cv2.VideoCapture('/dev/video0')
-            video.set(3, 160)
-            video.set(4, 120)
-            ret, videocap_image.value = video.read()
-            print("video reconnected")
-        videocap_image_ok.value = ret
-
-
-def autopilot(autopilot_image, autopilot_video_ok):
-    robot = robotPi()
     mynparr = Mynparr()
 
     threshold_p1 = 140  # target: 3000
     threshold_p2 = 65
     threshold_p3 = 70  # target: 6100
     threshold_p5 = 86  # target: 2400
-    threshold_p6 = 110  # target: 3260 high: 110 low: 155
+    threshold_p6 = 148  # target: 3260 high: 110 low: 155
 
     target_white_pixel = 2740
 
@@ -93,7 +51,6 @@ def autopilot(autopilot_image, autopilot_video_ok):
         mynparr.crop_top = 75
         mynparr.crop_bottom = 120
         pid_output = start_pid.Calc(mynparr.diff, 0)
-        robot.movement.left_ward(speed=0, turn=-pid_output, times=200)
         if -200 < mynparr.diff < 200:
             start_ready += 1
         if -200 < first_diff < 200:
@@ -112,7 +69,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
                 else:
                     start_toward = 2
             elif -150 <= first_diff <= 150:
-                mynparr.process(autopilot_image.value)
+                mynparr.process(frame)
                 if mynparr.diff < -150:
                     start_toward = 3
                 else:
@@ -133,17 +90,17 @@ def autopilot(autopilot_image, autopilot_video_ok):
         pid_output = start_pid.Calc(mynparr.diff, 0)
         if part2_count < 10:
             if start_toward == 5:
-                robot.movement.any_ward(angle=40, speed=150, turn=-pid_output, times=200)
+                print(5)
             elif start_toward == 6:
-                robot.movement.any_ward(angle=50, speed=150, turn=-pid_output, times=200)
+                print(6)
             elif start_toward == 4:
-                robot.movement.any_ward(angle=20, speed=150, turn=-pid_output, times=200)
+                print(4)
             elif start_toward == 1 or start_toward == 2:
-                robot.movement.any_ward(angle=0, speed=150, turn=-pid_output-200, times=200)
+                print(1)
             else:
-                robot.movement.any_ward(speed=150, turn=-pid_output, times=200)
+                print(3)
         else:
-            robot.movement.any_ward(speed=150, turn=-pid_output, times=200)
+            print(0)
         part2_count += 1
         # robot.movement.any_ward(speed=150, turn=-pid_output, times=200)
         if now_time - start_time > 3.9 + time_offset:
@@ -158,7 +115,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
     def part3():
         """part3: entering obstacle zone"""
         pid_output = start_pid.Calc(mynparr.diff, 0)
-        robot.movement.any_ward(speed=150, turn=-pid_output, times=200)
+        print("part3: ", pid_output)
         if now_time - start_time > 4.4 + time_offset:
             mynparr.crop_top = 50
             mynparr.crop_bottom = 95
@@ -169,12 +126,11 @@ def autopilot(autopilot_image, autopilot_video_ok):
     def part4():
         """part4: leaving obstacle zone"""
         pid_output = start_pid.Calc(mynparr.diff, 0)
-        robot.movement.any_ward(speed=150, turn=-pid_output, times=200)
+        print("part4: ", pid_output)
         if now_time - start_time > 6.0 + time_offset:
             mynparr.crop_top = 25
             mynparr.crop_bottom = 70
             mynparr.threshold = threshold_p5
-            robot.movement.prepare()
             print("part4 finished")
             return 5
         return 4
@@ -183,10 +139,10 @@ def autopilot(autopilot_image, autopilot_video_ok):
         """part5: before end line"""
         nonlocal process_frame
         pid_output = end_pid.Calc(mynparr.left_white_pixel, target_white_pixel)
-        robot.movement.any_ward(speed=150, turn=-pid_output, times=200)
+        print("part5: ", pid_output)
         if now_time - start_time > 7.4 + time_offset:
-            mynparr.crop_top = 75
-            mynparr.crop_bottom = 120
+            mynparr.crop_top = 45
+            mynparr.crop_bottom = 90
             mynparr.threshold = threshold_p6
             mynparr.morphology = False
             process_frame = False
@@ -197,7 +153,9 @@ def autopilot(autopilot_image, autopilot_video_ok):
     def part6(_frame):
         nonlocal draw_count
         """part6: end line"""
-        robot.movement.move_forward(speed=150, times=200)
+        valid = 0
+        invalid = 0
+        first_i = 0
         _frame = _frame[mynparr.crop_top:mynparr.crop_bottom, :]
         _frame = cv2.cvtColor(_frame, cv2.COLOR_BGR2GRAY)
         _, binary = cv2.threshold(_frame, mynparr.threshold, 1, cv2.THRESH_BINARY)
@@ -205,19 +163,24 @@ def autopilot(autopilot_image, autopilot_video_ok):
             summ = np.sum(binary[(i - 1) * 3: i * 3, :])
             if summ < 310:
                 print("line detect in:", i, summ, frame_count)
+                valid += 1
                 if i > 5:
-                    end_delay = end_delays[i]
-                    if end_delay < 0:
-                        end_delay = 0
-                    robot.movement.move_forward(speed=150, times=end_delay)
-                    print("part6 finished")
-                    print("end delay: ", end_delay, i)
-                    robot.movement.draw()
-                    return 7
+                    if first_i == 0:
+                        first_i = i
+            else:
+                if valid > 0:
+                    invalid += 1
+        print("valid: ", valid, "invalid: ", invalid)
+        if valid > 5 and invalid < 3:
+            end_delay = end_delays[first_i]
+            if end_delay < 0:
+                end_delay = 0
+            print("part6 finished")
+            print("end delay: ", end_delay, first_i)
+            return 7
         draw_count -= 1
         if draw_count == 0:
             print("draw")
-            robot.movement.draw()
         return 6
 
     # part functions
@@ -256,26 +219,25 @@ def autopilot(autopilot_image, autopilot_video_ok):
     }
 
     # the action before start
-    robot.movement.reset()
 
     # the crop area of part 1
     mynparr.crop_top = 75
     mynparr.crop_bottom = 120
     mynparr.threshold = threshold_p1
-    mynparr.process(autopilot_image.value)
+    mynparr.show = True
+    ret, frame = video.read()
+    mynparr.process(frame)
     first_diff = mynparr.diff
 
     while part < 7:
         # check if new frame is ready
-        if autopilot_video_ok.value == 1:
-            frame = autopilot_image.value
-            autopilot_video_ok.value = 0
-        else:
-            continue
+
+        ret, frame = video.read()
 
         # process frame
         # if process_frame:
         mynparr.process(frame)
+        cv2.waitKey(26)
         frame_count += 1
 
         # update now time
@@ -287,6 +249,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
             part = part_function()
         else:
             part = part_function(frame)
+            cv2.waitKey(500)
 
     # print info
     print("total time: ", now_time - start_time)
@@ -296,22 +259,8 @@ def autopilot(autopilot_image, autopilot_video_ok):
     print("first diff: ", first_diff)
     print("time offset: ", time_offset)
     mynparr.record_save = True
-    mynparr.process(autopilot_image.value)
+    mynparr.process(frame)
 
 
 if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal_handler)
-    image = multiprocessing.Manager().Value(cv2.CV_8UC3, None)
-    video_ok = multiprocessing.Manager().Value('i', 0)
-    videocap_proc = multiprocessing.Process(target=videocap, args=(image, video_ok))
-    autopilot_proc = multiprocessing.Process(target=autopilot, args=(image, video_ok))
-    videocap_proc.start()
-    print("wait for video ok")
-    while video_ok.value == 0:
-        time.sleep(0.1)
-    while True:
-        if sys.stdin.read(1) == ' ':
-            break
-    autopilot_proc.start()
-    autopilot_proc.join()
-    videocap_proc.join()
+    autopilot()
