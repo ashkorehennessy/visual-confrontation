@@ -65,7 +65,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
 
     target_white_pixel = 2740
 
-    end_delay_offset = 35
+    end_delay_offset = 33
 
 
     # init PID
@@ -191,6 +191,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
             mynparr.crop_bottom = 120
             mynparr.threshold = threshold_p6
             mynparr.morphology = False
+            robot.movement.draw()
             process_frame = False
             print("part5 finished")
             return 6
@@ -217,8 +218,6 @@ def autopilot(autopilot_image, autopilot_video_ok):
                     robot.movement.move_forward(speed=150, times=end_delay)
                     print("part6 finished")
                     print("end delay: ", end_delay, i)
-                    time.sleep(0.4)
-                    robot.movement.draw()
                     return 7
         return 6
 
@@ -291,6 +290,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
             part = part_function(frame)
 
     # print info
+    now_time = time.time()
     print("total time: ", now_time - start_time)
     print("fps: ", frame_count / (now_time - start_time))
     print("start toward: ", start_toward)
