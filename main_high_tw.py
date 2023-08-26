@@ -13,7 +13,7 @@ from mynparr import Mynparr
 def signal_handler(handler_signal, handler_frame):
     # SIGINT handler
     robot = robotPi()
-    robot.movement.reset()
+    robot.movement.prepare()
     exit(0)
 
 
@@ -65,7 +65,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
 
     target_white_pixel = 2740
 
-    end_delay_offset = 33
+    end_delay_offset = 27
 
 
     # init PID
@@ -163,7 +163,6 @@ def autopilot(autopilot_image, autopilot_video_ok):
         if now_time - start_time > 4.4 + time_offset:
             mynparr.crop_top = 50
             mynparr.crop_bottom = 95
-            robot.movement.hit()
             print("part3 finished")
             return 4
         return 3
@@ -176,7 +175,6 @@ def autopilot(autopilot_image, autopilot_video_ok):
             mynparr.crop_top = 25
             mynparr.crop_bottom = 70
             mynparr.threshold = threshold_p5
-            robot.movement.prepare()
             print("part4 finished")
             return 5
         return 4
@@ -191,7 +189,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
             mynparr.crop_bottom = 120
             mynparr.threshold = threshold_p6
             mynparr.morphology = False
-            robot.movement.draw()
+            #robot.movement.draw()
             process_frame = False
             print("part5 finished")
             return 6
@@ -217,6 +215,8 @@ def autopilot(autopilot_image, autopilot_video_ok):
                         end_delay = 0
                     robot.movement.move_forward(speed=150, times=end_delay)
                     print("part6 finished")
+                    time.sleep(0.7)
+                    robot.movement.draw()
                     print("end delay: ", end_delay, i)
                     return 7
         return 6
@@ -257,7 +257,7 @@ def autopilot(autopilot_image, autopilot_video_ok):
     }
 
     # the action before start
-    robot.movement.reset()
+    robot.movement.prepare()
 
     # the crop area of part 1
     mynparr.crop_top = 75
