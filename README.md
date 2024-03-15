@@ -16,15 +16,15 @@
 
 ---
 
-实景图，来自2023年比赛现场：
+实景图，来自2023年国赛比赛现场：
 
 ![1_2_1](README.assets/1_2_1.png)
 
-规则图，来自2023年比赛规则：
+规则图，来自2024年比赛规则：
 
 ![1_2_2](README.assets/1_2_2.png)
 
-### 1.3 详细规则附件(2023版)
+### 1.3 详细规则附件(2024版)
 
 ---
 
@@ -96,6 +96,8 @@
 | 传感器型号     | OmniVision OV2659 |
 | 视频捕获的像素格式 | YUYV              |
 | 驱动方式      | V4L2驱动            |
+
+摄像头的设备路径为/dev/videoX，其中X为摄像头的编号。
 
 运行以下命令获取摄像头支持的分辨率以及相应最大帧率:
 
@@ -319,7 +321,7 @@ fe80::ce82:5430:c811:1cd3 lladdr 1e:dd:29:75:35:72 STALE
 
 #### 3.2.2 ssh方式连接树莓派
 
-ssh可以算是性能开销最小的连接方式了，只有一个命令行界面，可以尽量腾出cpu处理图形，连接稳定性也很好。
+ssh是使用最基础最广泛的连接方式，也是性能开销最小的连接方式，只有一个命令行界面，可以尽量腾出cpu处理图形，连接稳定性很好。
 
 Windows10以上系统基本都内置了openssh，打开powershell(终端)输入ssh确认是否存在ssh程序。
 
@@ -361,7 +363,7 @@ pi@localhost:$
 
 xrdp可以兼容微软远程桌面连接协议，在windows上直接使用远程桌面连接即可，此方法性能占用高，稳定性好，画质好。
 
-在树莓派上自行配置好国内apt软件源，推荐中科大的(ustc)，输入以下命令安装xrdp
+输入以下命令安装xrdp
 
 ```
 sudo apt update && sudo apt install xrdp
@@ -386,3 +388,159 @@ unset DBUS_SESSION_BUS_ADDRESS
 ```
 
 然后重启
+
+#### 3.2.5 vnc连接树莓派
+
+vnc可以使用tightvnc，realvnc等软件，此方法性能占用中等，稳定性中等，画质差。
+
+### 3.3 树莓派的额外配置
+
+#### 3.3.1 修改镜像源
+
+树莓派默认的镜像源是raspbian，国内访问速度很慢，可以修改为中科大的镜像源。
+
+打开终端，输入以下命令
+
+```
+sudo nano /etc/apt/sources.list
+```
+
+在打开的文件中，使用方向键移动光标，将所有的```http://raspbian.raspberrypi.org/raspbian``` 替换为 ```http://mirrors.ustc.edu.cn/raspbian``` ，然后按 ```Ctrl+X``` ，输入 ```Y``` ，再按 ```Enter``` 保存退出。
+
+输入以下命令更新软件包列表
+
+```
+sudo apt update
+```
+
+#### 3.3.2 安装软件
+
+apt是树莓派的包管理器，可以安装大部分软件。
+
+输入以下命令搜索软件
+
+```
+apt search 软件名
+```
+
+此时会列出所有包含软件名的软件，找到自己需要的软件名，然后输入以下命令安装软件
+
+```
+sudo apt install 软件名
+```
+
+#### 3.3.3 关闭sudo密码
+
+编辑/etc/sudoers文件，输入以下命令
+
+```
+sudo nano /etc/sudoers
+```
+
+在打开的文件中，找到```pi ALL=(ALL) ALL```，修改为
+
+```
+pi ALL=(ALL) NOPASSWD: ALL
+```
+
+然后按 ```Ctrl+X``` ，输入 ```Y``` ，再按 ```Enter``` 保存退出。
+
+这样就可以在不输入密码的情况下使用sudo命令了。
+
+#### 3.3.4 v4l2ucp介绍
+
+v4l2ucp是一个图形化实时调节摄像头参数的软件，可以调节亮度、对比度、饱和度、色调等参数。
+
+输入以下命令安装v4l2ucp
+
+```
+sudo apt install v4l2ucp
+```
+
+然后可以在应用列表里找到v4l2ucp，打开后选择摄像头设备，调节参数即可。
+
+调节参数时最好打开摄像头预览，可以编写一个简单的python脚本配合opencv来实现
+
+```python
+import cv2
+
+cap = cv2.VideoCapture(0)
+
+while True:
+    ret, frame = cap.read()
+    cv2.imshow('frame', frame)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+
+cv2.destroyAllWindows()
+```
+
+#### 3.3.5 摄像头松动处理
+
+机器人行驶过程中，摄像头的USB接口有可能会震动松动，导致摄像头断开连接，由于摄像头使用v4l2驱动，所以摄像头断开连接后会导致/dev/video0设备文件消失，此时需要重新插拔摄像头或者输入以下命令重新加载v4l2驱动
+
+```shell
+sudo modprobe -r uvcvideo
+sudo modprobe uvcvideo
+```
+
+在运行python脚本并且使用opencv打开摄像头时，可以使用以下方法检测摄像头断开连接，并尝试重新加载v4l2驱动
+
+```python
+import cv2
+import subprocess
+import time
+video = cv2.VideoCapture('/dev/video0')
+while True:
+    ret, video_image = video.read()
+    if ret is False:
+        video.release()
+        time.sleep(0.1)
+        print("reconnect to camera")
+        subprocess.check_call("sudo modprobe -rf uvcvideo", shell=True)
+        time.sleep(0.4)
+        subprocess.check_call("sudo modprobe uvcvideo", shell=True)
+        time.sleep(0.2)
+        video = cv2.VideoCapture('/dev/video0')
+```
+
+---
+
+当然，提前预防摄像头USB口松动才是最好的办法，一个简单好用的办法是用软锤子把摄像头的USB接口敲到稍扁，这样摄像头就不会轻易松动了。
+
+#### 3.3.5 树莓派文件传输
+
+树莓派本身性能比较差，不适合在树莓派上编写大量代码，只更改代码的几个参数还好，自带的thonny没有代码补全，vscode远程连接树莓派开发也是非常卡顿，所以建议在本地编写代码，然后传输到树莓派上跑。
+
+传输文件的方式有很多，最简单的是使用scp命令，scp是ssh的一个子命令，可以在本地和远程主机之间传输文件。
+
+scp的命令格式如下
+
+```
+scp 本地文件路径 用户名@IP地址:远程文件路径
+```
+
+比如，要将本地的```C:\Users\a123\auto\04.03.AutoDrive_tensorflow.py```文件传输到树莓派的```/home/pi/Downloads/auto```目录下，树莓派的IP地址为192.168.43.193，输入以下命令
+
+```
+scp C:\Users\a123\auto\04.03.AutoDrive_tensorflow.py pi@192.168.43.193:/home/pi/Downloads/auto
+```
+
+此时会提示输入密码，输入密码后文件就会传输到树莓派上。
+
+如果要传输整个文件夹，可以使用```-r```参数
+
+```
+scp -r C:\Users\a123\auto pi@192.168.43.193:/home/pi/Downloads
+```
+
+一些ssh工具也自带文件传输功能，比如MobaXterm，Xshell等。
+
+---
+
+也可以直接插U盘，然后在树莓派上用文件管理器复制粘贴，但是对U盘的格式有要求，一般是FAT32格式，NTFS格式的U盘只能读不能写。
+
+## 4. 任务代码编写
+
